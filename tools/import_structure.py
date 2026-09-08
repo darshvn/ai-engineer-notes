@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Derive data/roadmap.json from the CampusX roadmap workbook.
+"""Derive data/structure.json from the source workbook.
 
-The workbook is a personal progress tracker and deliberately stays out of this
-repo; only the derived JSON is committed. Re-run this whenever progress changes:
+The workbook stays out of this repo; only the derived structure is committed.
+Re-run it when the outline changes:
 
-    python3 tools/import_roadmap.py "~/Downloads/CampusX AI Roadmap (1).xlsx"
+    python3 tools/import_structure.py "~/Downloads/CampusX AI Roadmap (1).xlsx"
 """
 import json, os, re, sys, datetime
 
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     src = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser(
         "~/Downloads/CampusX AI Roadmap (1).xlsx")
     data = parse(os.path.expanduser(src))
-    out = os.path.join(os.path.dirname(__file__), "..", "data", "roadmap.json")
+    out = os.path.join(os.path.dirname(__file__), "..", "data", "structure.json")
     with open(out, "w") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
     n = sum(len(t["sections"]) for tr in data["tracks"] for t in tr["topics"])

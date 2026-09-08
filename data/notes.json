@@ -8,6 +8,14 @@
       "track": "ai-engineer-track",
       "added": "2026-09-08",
       "artifact": "https://claude.ai/code/artifact/fc66a88a-d714-4c8e-ac26-aa4666a529ee"
+    },
+    {
+      "topic": "python",
+      "section": 1,
+      "title": "Names, Not Variables",
+      "path": "notes/python/01-python-core-fundamentals",
+      "track": "prerequisites",
+      "added": "2026-09-08"
     }
   ]
 }

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Generate index.html from data/roadmap.json + data/notes.json, and refresh the
-navigation chrome inside every note page.
+"""Generate index.html from data/structure.json + data/notes.json, and refresh
+the navigation chrome inside every note page.
 
-Chrome lives between CHROME markers inside each note so it can be regenerated as
-new notes land — otherwise prev/next links would freeze at whatever existed when
-the note was first added.
+The index lists notes only. Chrome lives between CHROME markers inside each note
+so it can be regenerated as new notes land — otherwise prev/next links would
+freeze at whatever existed when the note was first added.
 
     python3 tools/build_index.py
 """
-import html, json, os, re, datetime
+import html, json, os, re
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 START, END = "<!--CHROME:START-->", "<!--CHROME:END-->"
@@ -34,33 +34,30 @@ def e(s):
     return html.escape(str(s), quote=True)
 
 
-def index_sections(roadmap):
+def index_sections(structure):
     """Flatten to {(topic_slug, n): (track, topic, section)} for quick lookup."""
-    out = {}
-    for tr in roadmap["tracks"]:
-        for t in tr["topics"]:
-            for s in t["sections"]:
-                out[(t["slug"], s["n"])] = (tr, t, s)
-    return out
+    return {(t["slug"], s["n"]): (tr, t, s)
+            for tr in structure["tracks"]
+            for t in tr["topics"]
+            for s in t["sections"]}
 
 
 # ---------------------------------------------------------------- note chrome
 
-def chrome_for(note, notes_by_topic, lookup):
+def chrome_for(note, by_topic, lookup):
     tr, t, s = lookup[(note["topic"], note["section"])]
-    siblings = sorted(notes_by_topic[note["topic"]], key=lambda x: x["section"])
-    i = next(k for k, x in enumerate(siblings) if x["section"] == note["section"])
-    prev = siblings[i - 1] if i > 0 else None
-    nxt = siblings[i + 1] if i < len(siblings) - 1 else None
+    sibs = sorted(by_topic[note["topic"]], key=lambda x: x["section"])
+    i = next(k for k, x in enumerate(sibs) if x["section"] == note["section"])
+    prev = sibs[i - 1] if i > 0 else None
+    nxt = sibs[i + 1] if i < len(sibs) - 1 else None
 
     def link(n, label):
         if not n:
             return ""
         _, _, ns = lookup[(n["topic"], n["section"])]
-        href = f"../../{n['topic']}/{ns['slug']}/"
-        return (f'<a class="nav-adj" href="{e(href)}">'
+        return (f'<a class="nav-adj" href="../../{e(n["topic"])}/{e(ns["slug"])}/">'
                 f'<span class="nav-dir">{label}</span>'
-                f'<span class="nav-t">&sect;{ns["n"]} {e(ns["name"])}</span></a>')
+                f'<span class="nav-t">{e(n["title"])}</span></a>')
 
     return f"""{START}
 <style>
@@ -73,8 +70,8 @@ def chrome_for(note, notes_by_topic, lookup):
   .crumb{{color:var(--muted);letter-spacing:.06em}}
   .crumb b{{color:var(--ink);font-weight:600}}
   .note-chrome .spacer{{flex:1 1 auto}}
-  .nav-adj{{display:inline-flex;gap:7px;align-items:baseline;max-width:280px}}
-  .nav-dir{{color:var(--muted)}}
+  .nav-adj{{display:inline-flex;gap:7px;align-items:baseline;max-width:260px}}
+  .nav-dir{{color:var(--muted);white-space:nowrap}}
   .nav-t{{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
   #theme-toggle{{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;
     text-transform:uppercase;font-weight:600;color:var(--muted);background:transparent;
@@ -84,10 +81,10 @@ def chrome_for(note, notes_by_topic, lookup):
 </style>
 <nav class="note-chrome"><div class="inner">
   <a href="../../../">&larr; All notes</a>
-  <span class="crumb">{e(tr['name'])} / {e(t['name'])} / <b>&sect;{s['n']}</b></span>
+  <span class="crumb">{e(t['name'])} / <b>&sect;{s['n']}</b></span>
   <span class="spacer"></span>
-  {link(prev, '&larr; Prev')}
-  {link(nxt, 'Next &rarr;')}
+  {link(prev, '&larr;')}
+  {link(nxt, '&rarr;')}
   <button id="theme-toggle" type="button">Theme</button>
 </div></nav>
 {TOGGLE_JS}
@@ -108,10 +105,11 @@ def refresh_chrome(notes, lookup):
         src = open(path).read()
         block = chrome_for(n, by_topic, lookup)
         if START in src and END in src:
-            new = re.sub(re.escape(START) + r".*?" + re.escape(END), lambda _: block, src, flags=re.S)
+            new = re.sub(re.escape(START) + r".*?" + re.escape(END),
+                         lambda _: block, src, flags=re.S)
         else:
             new = src.replace("<body>", "<body>\n" + block, 1)
-            if new == src:                      # no <body> tag — fall back to prepend
+            if new == src:
                 new = block + "\n" + src
         if new != src:
             open(path, "w").write(new)
@@ -119,57 +117,38 @@ def refresh_chrome(notes, lookup):
     return touched
 
 
-# ------------------------------------------------------------------- the hub
+# ------------------------------------------------------------------- the index
 
-def build_hub(roadmap, notes):
-    have = {(n["topic"], n["section"]): n for n in notes}
+def build_index(structure, notes):
+    have = {}
+    for n in notes:
+        have.setdefault(n["topic"], {})[n["section"]] = n
+
     parts = []
-
-    for tr in roadmap["tracks"]:
-        tr_notes = sum(1 for t in tr["topics"] for s in t["sections"]
-                       if (t["slug"], s["n"]) in have)
+    for tr in structure["tracks"]:
+        topics = [t for t in tr["topics"] if have.get(t["slug"])]
+        if not topics:
+            continue
         parts.append(f'<section class="track">\n<h2>{e(tr["name"])}</h2>')
-        parts.append(
-            f'<p class="track-sub">{len(tr["topics"])} topics &middot; '
-            f'{sum(len(t["sections"]) for t in tr["topics"])} sections &middot; '
-            f'{tr["hours_done"]:g} / {tr["hours"]:g} hrs &middot; '
-            f'{tr_notes} note{"" if tr_notes == 1 else "s"} written</p>')
-
-        for t in tr["topics"]:
-            n_notes = sum(1 for s in t["sections"] if (t["slug"], s["n"]) in have)
-            pct = (t["hours_done"] / t["hours"] * 100) if t["hours"] else 0
-            # topics we've actually touched open by default; the rest stay folded
-            # so the page reads as a dashboard instead of a 181-row wall
-            openattr = " open" if n_notes or t["hours_done"] else ""
+        for t in topics:
             rows = []
             for s in t["sections"]:
-                note = have.get((t["slug"], s["n"]))
-                name = e(s["name"])
-                if note:
-                    name = f'<a href="{e(note["path"])}/">{name}</a>'
-                pill = ""
-                if s["complete"]:
-                    pill = '<span class="pill" style="color:var(--accent)">done</span>'
-                elif s["done"]:
-                    pill = f'<span class="pill">{s["done"]}/{s["total"]}</span>'
+                n = have[t["slug"]].get(s["n"])
+                if not n:
+                    continue
                 rows.append(
-                    f'<li class="{"has-note" if note else ""}">'
-                    f'<span class="sec-n">{s["n"]:02d}</span>'
-                    f'<span class="sec-name">{name}{pill}</span>'
-                    f'<span class="sec-meta">{s["hours"]:g}h</span></li>')
-            parts.append(
-                f'<details class="topic"{openattr}><summary>'
-                f'<span class="topic-name"><span class="caret">&#9656;</span>{e(t["name"])}</span>'
-                f'<span class="topic-stat">{n_notes or "&mdash;"} notes &middot; '
-                f'{t["hours_done"]:g}/{t["hours"]:g} h</span>'
-                f'<span class="bar{"" if pct else " none"}"><i style="width:{pct:.1f}%"></i></span>'
-                f'</summary>\n<ul class="sections">\n' + "\n".join(rows) +
-                '\n</ul>\n</details>')
+                    f'<li>'
+                    f'<span class="sec-n">&sect;{s["n"]}</span>'
+                    f'<span class="sec-name">'
+                    f'<a href="{e(n["path"])}/">{e(n["title"])}</a>'
+                    f'<span class="sec-sub">{e(s["name"])}</span>'
+                    f'</span></li>')
+            parts.append(f'<div class="topic"><h3>{e(t["name"])}</h3>\n'
+                         f'<ul class="sections">\n' + "\n".join(rows) + '\n</ul></div>')
         parts.append("</section>")
 
-    total_notes = len(notes)
-    total_secs = sum(len(t["sections"]) for tr in roadmap["tracks"] for t in tr["topics"])
-    pct = roadmap["hours_done"] / roadmap["hours"] * 100 if roadmap["hours"] else 0
+    if not parts:
+        parts = ['<section class="track"><p class="empty">No notes yet.</p></section>']
 
     return f"""<!doctype html>
 <html lang="en">
@@ -177,7 +156,7 @@ def build_hub(roadmap, notes):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AI Engineer Notes</title>
-<meta name="description" content="Study notes built while working through the CampusX AI Engineer roadmap — one note per roadmap section, each in prose and diagrams.">
+<meta name="description" content="Notes on language models, Python and the systems around them — each idea in prose and as a diagram, closing with a retrieval bank.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
 <link rel="stylesheet" href="assets/hub.css">
 </head>
@@ -185,22 +164,11 @@ def build_hub(roadmap, notes):
 <button id="theme-toggle" type="button">Theme</button>
 <div class="wrap">
 <header class="mast">
-  <div class="eyebrow">CampusX AI Engineer Roadmap</div>
   <h1>AI Engineer Notes</h1>
-  <p class="standfirst">One note per roadmap section &mdash; each idea written out in prose, drawn as the mechanism it actually is, and closed with a retrieval bank rather than a summary to re-read.</p>
-  <div class="meta-strip">
-    <div><span class="meta-k">Notes written</span><span class="meta-v">{total_notes} / {total_secs}</span></div>
-    <div><span class="meta-k">Hours done</span><span class="meta-v">{roadmap['hours_done']:g} / {roadmap['hours']:g}</span></div>
-    <div><span class="meta-k">Progress</span><span class="meta-v">{pct:.1f}%</span></div>
-    <div><span class="meta-k">Updated</span><span class="meta-v">{datetime.date.today().isoformat()}</span></div>
-  </div>
+  <p class="standfirst">Every idea written out in prose, drawn as the mechanism it actually is, and closed with a retrieval bank rather than a summary to re-read.</p>
 </header>
 {chr(10).join(parts)}
-<footer>
-  <span>AI Engineer Notes</span>
-  <span>Roadmap data generated {e(roadmap['generated'])}</span>
-  <span>Retrieval-practice format after Dunlosky et al. 2013</span>
-</footer>
+<footer><span>AI Engineer Notes</span></footer>
 </div>
 {TOGGLE_JS}
 </body>
@@ -209,14 +177,14 @@ def build_hub(roadmap, notes):
 
 
 def main():
-    roadmap, notes = load("roadmap.json"), load("notes.json")["notes"]
-    lookup = index_sections(roadmap)
+    structure, notes = load("structure.json"), load("notes.json")["notes"]
+    lookup = index_sections(structure)
     notes = [n for n in notes if (n["topic"], n["section"]) in lookup]
 
     touched = refresh_chrome(notes, lookup)
     with open(os.path.join(ROOT, "index.html"), "w") as f:
-        f.write(build_hub(roadmap, notes))
-    print(f"built index.html  ({len(notes)} notes linked, chrome refreshed in {touched})")
+        f.write(build_index(structure, notes))
+    print(f"built index.html  ({len(notes)} notes, chrome refreshed in {touched})")
 
 
 if __name__ == "__main__":

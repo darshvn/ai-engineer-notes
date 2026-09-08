@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Names, Not Variables</title>
+<meta name="description" content="Python core fundamentals revisited — the binding model, mutable defaults, scope resolution and comprehension mechanics.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
+<style>
+:root {
+  --bg:        #E9EBE7;
+  --surface:   #F6F7F4;
+  --surface-2: #DFE3DE;
+  --ink:       #14181A;
+  --muted:     #59635F;
+  --rule:      #C9CFC8;
+  --accent:    #146B5F;
+  --accent-dim:#DCE8E4;
+  --signal:    #9A2C6B;
+  --signal-dim:#F0DEE8;
+
+  --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --f-body:    "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --f-mono:    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --col: 66ch;
+  --wide: 860px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:        #121614;
+    --surface:   #1A201D;
+    --surface-2: #232A27;
+    --ink:       #E6EAE6;
+    --muted:     #929F99;
+    --rule:      #2E3733;
+    --accent:    #56BCAC;
+    --accent-dim:#1C2E2B;
+    --signal:    #E982B8;
+    --signal-dim:#33202B;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:        #121614;
+  --surface:   #1A201D;
+  --surface-2: #232A27;
+  --ink:       #E6EAE6;
+  --muted:     #929F99;
+  --rule:      #2E3733;
+  --accent:    #56BCAC;
+  --accent-dim:#1C2E2B;
+  --signal:    #E982B8;
+  --signal-dim:#33202B;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16.5px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 0 24px 96px;
+}
+
+/* ---------- masthead ---------- */
+
+.mast {
+  padding: 72px 0 40px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+}
+.eyebrow span.sep { color: var(--rule); }
+h1 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+.standfirst {
+  font-family: var(--f-display);
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 56ch;
+  margin: 0;
+}
+
+/* ---------- how to use ---------- */
+
+.howto {
+  margin: 40px 0 0;
+  padding: 24px 26px;
+  background: var(--accent-dim);
+  border-left: 3px solid var(--accent);
+}
+.howto h2 {
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.howto p { margin: 0 0 10px; max-width: 62ch; font-size: 15.5px; }
+.howto p:last-child { margin-bottom: 0; }
+
+/* ---------- sections ---------- */
+
+section.topic {
+  padding-top: 64px;
+  scroll-margin-top: 24px;
+}
+.topic-head {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 0 18px;
+  align-items: start;
+  border-top: 1px solid var(--rule);
+  padding-top: 20px;
+}
+.num {
+  font-family: var(--f-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--signal);
+  padding-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+h2.topic-title {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: clamp(1.7rem, 3.6vw, 2.2rem);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.body { max-width: var(--col); margin-left: 64px; }
+@media (max-width: 640px) { .body { margin-left: 0; } .topic-head { grid-template-columns: 34px 1fr; gap: 0 12px; } }
+
+.body p { margin: 18px 0; }
+.body ul, .body ol { margin: 18px 0; padding-left: 22px; }
+.body li { margin: 7px 0; }
+
+.lede {
+  font-family: var(--f-display);
+  font-size: 1.28rem;
+  line-height: 1.45;
+  color: var(--ink);
+  border-left: 3px solid var(--signal);
+  padding-left: 18px;
+  margin: 24px 0 26px !important;
+}
+
+code, .mono { font-family: var(--f-mono); font-size: 0.88em; }
+.body code {
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+strong { font-weight: 600; }
+em { font-style: italic; }
+
+.formula {
+  font-family: var(--f-mono);
+  font-size: 14.5px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 16px 18px;
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.75;
+  margin: 22px 0;
+}
+
+/* misconception */
+.bust {
+  border: 1px solid var(--signal);
+  background: var(--signal-dim);
+  padding: 18px 20px;
+  margin: 26px 0;
+}
+.bust .tag {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--signal);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+.bust p { margin: 0 0 10px; font-size: 15.5px; }
+.bust p:last-child { margin-bottom: 0; }
+
+/* takeaway */
+.takeaway {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: baseline;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 14px 0;
+  margin: 28px 0 8px;
+}
+.takeaway .tag {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.takeaway p { margin: 0; font-size: 15.5px; }
+
+/* figures */
+figure {
+  margin: 34px 0;
+  max-width: var(--wide);
+}
+figure .svg-hold { overflow-x: auto; }
+figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
+figcaption {
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin-top: 12px;
+  padding-left: 12px;
+  border-left: 2px solid var(--rule);
+  max-width: 74ch;
+}
+
+/* tables */
+.tbl-hold { overflow-x: auto; margin: 26px 0; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14.5px;
+  min-width: 520px;
+}
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+th {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--ink);
+}
+td:first-child { font-weight: 500; }
+tbody tr:last-child td { border-bottom: 0; }
+td.mono, th.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* retrieval */
+.retrieval { margin-top: 80px; border-top: 3px double var(--rule); padding-top: 40px; }
+.retrieval h2 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 2rem;
+  margin: 0 0 10px;
+  letter-spacing: -0.015em;
+}
+.retrieval > p { max-width: var(--col); color: var(--muted); margin: 0 0 26px; }
+details {
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  margin-bottom: 10px;
+}
+details[open] { background: var(--surface-2); }
+summary {
+  cursor: pointer;
+  padding: 14px 18px;
+  font-weight: 500;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  align-items: baseline;
+}
+summary::-webkit-details-marker { display: none; }
+summary::before {
+  content: "Q" counter(qc);
+  counter-increment: qc;
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  color: var(--signal);
+  font-weight: 600;
+}
+.qlist { counter-reset: qc; }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details .ans {
+  padding: 0 18px 16px 58px;
+  font-size: 15.5px;
+  color: var(--muted);
+  max-width: 70ch;
+}
+details .ans strong { color: var(--ink); }
+
+/* schedule */
+.sched { margin-top: 64px; border-top: 1px solid var(--rule); padding-top: 32px; }
+.sched h2 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 1.7rem;
+  margin: 0 0 8px;
+}
+.sched > p { max-width: var(--col); color: var(--muted); margin: 0 0 22px; }
+
+footer {
+  margin-top: 72px;
+  padding-top: 22px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+<style>
+  :root { color-scheme: light dark; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<!--CHROME:START-->
+<style>
+  .note-chrome{position:sticky;top:0;z-index:40;background:var(--surface);
+    border-bottom:1px solid var(--rule);font-family:var(--f-mono);font-size:11.5px}
+  .note-chrome .inner{max-width:940px;margin:0 auto;padding:10px 24px;
+    display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
+  .note-chrome a{color:var(--accent);text-decoration:none}
+  .note-chrome a:hover{text-decoration:underline}
+  .crumb{color:var(--muted);letter-spacing:.06em}
+  .crumb b{color:var(--ink);font-weight:600}
+  .note-chrome .spacer{flex:1 1 auto}
+  .nav-adj{display:inline-flex;gap:7px;align-items:baseline;max-width:260px}
+  .nav-dir{color:var(--muted);white-space:nowrap}
+  .nav-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #theme-toggle{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;font-weight:600;color:var(--muted);background:transparent;
+    border:1px solid var(--rule);border-radius:2px;padding:5px 9px;cursor:pointer;line-height:1}
+  #theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
+  @media print{.note-chrome{display:none}}
+</style>
+<nav class="note-chrome"><div class="inner">
+  <a href="../../../">&larr; All notes</a>
+  <span class="crumb">Python / <b>&sect;1</b></span>
+  <span class="spacer"></span>
+  
+  
+  <button id="theme-toggle" type="button">Theme</button>
+</div></nav>
+<script>
+(function(){var r=document.documentElement,b=document.getElementById('theme-toggle'),K='aen-theme';
+function sd(){return !!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)}
+function ap(t){t?r.setAttribute('data-theme',t):r.removeAttribute('data-theme');
+var d=t?t==='dark':sd();b.textContent=d?'Light':'Dark';
+b.setAttribute('aria-label','Switch to '+(d?'light':'dark')+' theme')}
+var s=null;try{s=localStorage.getItem(K)}catch(e){}ap(s);
+b.addEventListener('click',function(){var c=r.getAttribute('data-theme'),
+d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch(e){}});})();
+</script>
+<!--CHROME:END-->
+<div class="wrap">
+
+<header class="mast">
+  <div class="eyebrow">
+    <span>Prerequisites</span><span class="sep">/</span>
+    <span>Python</span><span class="sep">/</span>
+    <span>&sect;1 Core Fundamentals</span>
+  </div>
+  <h1>Names, Not Variables</h1>
+  <p class="standfirst">Python core fundamentals, revisited from the far side &mdash; not how the syntax works, but which parts of it will quietly cost you an afternoon two months from now.</p>
+  </header>
+
+<div class="howto">
+  <h2>How to use these notes</h2>
+  <p>You've already worked through this section, so this isn't a tutorial &mdash; it's consolidation. It skips what you can look up and concentrates on the handful of mechanisms that generate most real Python bugs, plus the reasons behind conventions that otherwise look arbitrary.</p>
+  <p>Same format as the rest of the set: every idea in prose and as a diagram, and a retrieval bank at the end instead of a summary. Answer those from memory before you re-read anything &mdash; recognising a concept and being able to produce it are different skills, and only the second one survives contact with a bug.</p>
+</div>
+
+<!-- 1 -->
+<section class="topic" id="s1">
+  <div class="topic-head">
+    <div class="num">01</div>
+    <h2 class="topic-title">Syntax, indentation and PEP 8</h2>
+  </div>
+  <div class="body">
+    <p class="lede">In C, Java or JavaScript, braces define blocks and indentation is a courtesy to the reader. In Python indentation <em>is</em> the block delimiter. Your whitespace is parsed.</p>
+
+    <p>This is why style matters more here than in most languages: formatting is load-bearing. The tokenizer emits <code>INDENT</code> and <code>DEDENT</code> tokens the same way another language's lexer emits <code>{</code> and <code>}</code>. A misplaced space isn't untidy, it's a different program &mdash; or a <code>SyntaxError</code>.</p>
+
+    <p>Two consequences worth internalising:</p>
+    <ul>
+      <li><strong>Never mix tabs and spaces.</strong> Python 3 refuses to guess and raises <code>TabError</code>. Four spaces, always &mdash; that's PEP 8, and every formatter assumes it.</li>
+      <li><strong>The dangling-else bug can't exist in Python.</strong> Indentation makes nesting unambiguous, which is a genuine design win, not just a stylistic preference.</li>
+    </ul>
+
+    <p><strong>PEP 8 is a negotiation you should stop having.</strong> Its real value isn't that its choices are optimal &mdash; it's that they're <em>settled</em>, so nobody spends review time on them. Run <code>black</code> or <code>ruff format</code> and stop thinking about it. The parts worth actually remembering are the naming conventions, because those carry meaning rather than aesthetics:</p>
+
+    <div class="tbl-hold">
+    <table>
+      <thead><tr><th>Form</th><th>Means</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">snake_case</td><td>functions, variables, modules</td><td class="mono">parse_config</td></tr>
+        <tr><td class="mono">PascalCase</td><td>classes</td><td class="mono">HttpClient</td></tr>
+        <tr><td class="mono">UPPER_SNAKE</td><td>module-level constants</td><td class="mono">MAX_RETRIES</td></tr>
+        <tr><td class="mono">_leading</td><td>internal &mdash; a convention, not enforced</td><td class="mono">_cache</td></tr>
+        <tr><td class="mono">__double</td><td>name-mangled inside classes</td><td class="mono">__slots</td></tr>
+        <tr><td class="mono">trailing_</td><td>avoids clashing with a keyword</td><td class="mono">class_</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="bust">
+      <span class="tag">Misconception</span>
+      <p><em>&ldquo;A single leading underscore makes something private.&rdquo;</em> It makes nothing private. It's a message to humans, and the only thing it changes mechanically is that <code>from module import *</code> skips it. Python has no access control &mdash; it has conventions and the expectation that you're an adult about them.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="topic" id="s2">
+  <div class="topic-head">
+    <div class="num">02</div>
+    <h2 class="topic-title">Variables, data types and casting</h2>
+  </div>
+  <div class="body">
+    <p class="lede">Python has no variables in the C sense. It has <strong>names bound to objects</strong>. Almost every confusing Python bug you will hit this year is this one fact wearing a different hat.</p>
+
+    <p>A C variable is a labelled box holding a value; assignment copies bytes into the box. A Python name is a label attached to an object that lives elsewhere; assignment moves the label. Nothing is copied, ever, unless you ask.</p>
+
+    <div class="formula">a = [1, 2]
+b = a          # not a copy — a second label on the same list
+b.append(3)
+print(a)       # [1, 2, 3]</div>
+
+    <p>The distinction that follows is the one to burn in: <strong>rebinding a name is not the same as mutating an object.</strong></p>
+  </div>
+
+  <figure>
+    <div class="svg-hold">
+    <svg viewBox="0 0 740 306" role="img" aria-label="Top: names a and b both point to a single list object. Bottom left: calling append mutates that shared object so both names see the change. Bottom right: reassigning b builds a new object and moves only b's arrow, leaving a pointing at the original list.">
+      <defs>
+        <marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="ps" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--signal)"/>
+        </marker>
+      </defs>
+
+      <text x="20" y="22" font-family="'IBM Plex Mono', monospace" font-size="11.5" letter-spacing="1.3" fill="currentColor" opacity="0.55">a = [1, 2] &#183; b = a</text>
+
+      <rect x="20" y="38" width="56" height="28" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.75"/>
+      <text x="48" y="57" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="13" fill="currentColor">a</text>
+      <rect x="20" y="76" width="56" height="28" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.75"/>
+      <text x="48" y="95" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="13" fill="currentColor">b</text>
+      <text x="48" y="122" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10" fill="currentColor" opacity="0.55">names</text>
+
+      <line x1="76" y1="52" x2="176" y2="64" stroke="currentColor" stroke-width="1.2" opacity="0.7" marker-end="url(#pa)"/>
+      <line x1="76" y1="90" x2="176" y2="76" stroke="currentColor" stroke-width="1.2" opacity="0.7" marker-end="url(#pa)"/>
+
+      <rect x="180" y="50" width="132" height="40" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="246" y="75" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="14" fill="var(--accent)">[1, 2]</text>
+      <text x="246" y="110" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10" fill="currentColor" opacity="0.55">one object</text>
+
+      <text x="350" y="70" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor" opacity="0.75">one object, two names &#8212; nothing was copied</text>
+
+      <line x1="20" y1="146" x2="720" y2="146" stroke="currentColor" stroke-width="1" opacity="0.18"/>
+
+      <!-- left: mutate -->
+      <text x="20" y="174" font-family="'IBM Plex Mono', monospace" font-size="12" font-weight="600" fill="var(--accent)">b.append(3)</text>
+      <text x="20" y="190" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.55">mutates the object</text>
+
+      <rect x="20" y="204" width="46" height="26" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.75"/>
+      <text x="43" y="222" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">a</text>
+      <rect x="20" y="238" width="46" height="26" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.75"/>
+      <text x="43" y="256" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">b</text>
+
+      <line x1="66" y1="217" x2="152" y2="226" stroke="var(--accent)" stroke-width="1.3" marker-end="url(#pa)"/>
+      <line x1="66" y1="251" x2="152" y2="240" stroke="var(--accent)" stroke-width="1.3" marker-end="url(#pa)"/>
+      <rect x="156" y="214" width="132" height="38" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="1.6"/>
+      <text x="222" y="238" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="13" fill="var(--accent)">[1, 2, 3]</text>
+      <text x="222" y="276" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--accent)">both names see it</text>
+
+      <line x1="366" y1="160" x2="366" y2="290" stroke="currentColor" stroke-width="1" opacity="0.18"/>
+
+      <!-- right: rebind -->
+      <text x="392" y="174" font-family="'IBM Plex Mono', monospace" font-size="12" font-weight="600" fill="var(--signal)">b = b + [3]</text>
+      <text x="392" y="190" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.55">builds a new object, moves the label</text>
+
+      <rect x="392" y="204" width="46" height="26" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.75"/>
+      <text x="415" y="222" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">a</text>
+      <rect x="392" y="238" width="46" height="26" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.75"/>
+      <text x="415" y="256" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">b</text>
+
+      <line x1="438" y1="217" x2="524" y2="217" stroke="currentColor" stroke-width="1.2" opacity="0.7" marker-end="url(#pa)"/>
+      <rect x="528" y="203" width="120" height="28" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.7"/>
+      <text x="588" y="222" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12.5" fill="currentColor">[1, 2]</text>
+
+      <line x1="438" y1="251" x2="524" y2="251" stroke="var(--signal)" stroke-width="1.4" marker-end="url(#ps)"/>
+      <rect x="528" y="237" width="120" height="28" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.6"/>
+      <text x="588" y="256" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12.5" fill="var(--signal)">[1, 2, 3]</text>
+
+      <text x="588" y="290" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--signal)">only b moved</text>
+    </svg>
+    </div>
+    <figcaption>Same starting state, two operations that look interchangeable and are not. <span class="mono">append</span> reaches through the label and changes the object every label points at; <span class="mono">b = b + [3]</span> constructs a new object and repoints one label. When a function &ldquo;didn't change my list,&rdquo; it did the right-hand thing; when it changed a list you didn't expect it to touch, it did the left-hand thing.</figcaption>
+  </figure>
+
+  <div class="body">
+    <p><strong>Python is dynamically but strongly typed.</strong> Those are different axes and conflating them causes confusion. <em>Dynamic</em> means a name has no declared type and can be rebound to anything. <em>Strong</em> means the object's type is enforced &mdash; <code>"3" + 4</code> raises <code>TypeError</code> rather than silently producing <code>"34"</code> or <code>7</code> the way JavaScript or PHP would.</p>
+
+    <p><strong>Casting is construction, not reinterpretation.</strong> <code>int("42")</code> doesn't relabel bytes; it parses a string and builds a new int object. Which is why <code>int("42.0")</code> raises <code>ValueError</code> &mdash; the int parser doesn't accept a decimal point. You want <code>int(float("42.0"))</code>.</p>
+
+    <div class="bust">
+      <span class="tag">Misconception</span>
+      <p><em>&ldquo;<code>is</code> and <code>==</code> are interchangeable, I tested it.&rdquo;</em></p>
+      <p><code>==</code> asks &ldquo;equal value?&rdquo;; <code>is</code> asks &ldquo;the same object?&rdquo;. Your test worked because CPython caches small integers (&minus;5 to 256) and interns short strings, so <code>256 is 256</code> is <code>True</code> and <code>257 is 257</code> may not be. That is an implementation detail, not a language guarantee. Use <code>is</code> for <code>None</code>, <code>True</code> and <code>False</code> only &mdash; those are genuine singletons.</p>
+    </div>
+
+    <div class="takeaway">
+      <span class="tag">Carries forward</span>
+      <p>This model is the whole basis of &sect;3's shallow-vs-deep copy topic, and of the mutable-default trap below. If the names-and-objects picture is solid, both of those stop being surprises and become predictions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="topic" id="s3">
+  <div class="topic-head">
+    <div class="num">03</div>
+    <h2 class="topic-title">Input, output, comments and docstrings</h2>
+  </div>
+  <div class="body">
+    <p class="lede">A comment is discarded by the compiler. A docstring is an object attached to the function at runtime. That difference is why one of them is worth writing carefully.</p>
+
+    <p>A string literal in the first statement position of a module, class or function is bound to <code>__doc__</code> and survives into the running program. It's what <code>help()</code> prints, what your IDE shows on hover, what <code>pydoc</code> and Sphinx extract, and what a doctest runner executes. A <code>#</code> comment is gone before the bytecode exists.</p>
+
+    <div class="formula">def retry(fn, attempts=3):
+    """Call fn until it returns without raising.
+
+    Raises the final exception if every attempt fails.
+    """                        # ← reachable as retry.__doc__
+    # a note to the next reader — gone at compile time
+    ...</div>
+
+    <p><strong>The rule of thumb worth keeping:</strong> comments explain <em>why</em>, code explains <em>what</em>. A comment restating the code is worse than none, because it's a second thing that can drift out of date &mdash; and the compiler will never tell you it has.</p>
+
+    <p><strong>On <code>print</code> and f-strings.</strong> f-strings (3.6+) aren't only terser, they're faster &mdash; formatting is compiled into the bytecode rather than dispatched at runtime through <code>str.format</code>. Two features worth knowing because they save real debugging time:</p>
+
+    <div class="formula">value = 42
+print(f"{value=}")        # value=42        — self-labelling, 3.8+
+print(f"{value:>8,.2f}")  #    42.00        — align, thousands, precision
+print(f"{obj!r}")         # uses repr(), not str() — shows quotes and type</div>
+
+    <div class="bust">
+      <span class="tag">Worth knowing early</span>
+      <p><code>input()</code> always returns a string. Always. <code>input("age: ")</code> giving <code>"30"</code> and then <code>age &gt; 18</code> raising <code>TypeError</code> is the single most common beginner traceback, and it's the strong-typing rule from &sect;2 doing exactly what it should.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="topic" id="s4">
+  <div class="topic-head">
+    <div class="num">04</div>
+    <h2 class="topic-title">Control flow</h2>
+  </div>
+  <div class="body">
+    <p class="lede">Python's <code>for</code> is not a counting loop wearing different syntax. It is a <em>for-each</em> over anything that can produce an iterator &mdash; which is why <code>range(10**9)</code> costs no memory.</p>
+
+    <p>There is no three-clause <code>for (i=0; i&lt;n; i++)</code>. <code>for x in thing:</code> calls <code>iter(thing)</code> and pulls items until <code>StopIteration</code>. That's the same protocol generators use, which is why &sect;3's generator material slots straight in on top of this.</p>
+
+    <p><strong>Writing <code>for i in range(len(xs))</code> is almost always a mistake.</strong> If you want items, iterate items. If you want both, use <code>enumerate</code>. Index arithmetic is where off-by-one bugs live:</p>
+
+    <div class="formula">for i in range(len(xs)):  print(xs[i])       # C, transliterated
+for x in xs:              print(x)           # Python
+for i, x in enumerate(xs): print(i, x)       # when you need both</div>
+
+    <p><strong>Truthiness</strong> is a protocol, not a coincidence. <code>if xs:</code> calls <code>__bool__</code>, falling back to <code>__len__</code>. So empty containers are falsy without any special-casing in the language:</p>
+
+    <div class="tbl-hold">
+    <table>
+      <thead><tr><th>Falsy</th><th>Truthy</th><th>Bites you when</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">0 &nbsp; 0.0 &nbsp; 0j</td><td class="mono">any other number</td><td>a valid <code>0</code> reads as &ldquo;missing&rdquo;</td></tr>
+        <tr><td class="mono">"" </td><td class="mono">"0" &nbsp; " "</td><td><code>"0"</code> and <code>" "</code> are both <em>truthy</em></td></tr>
+        <tr><td class="mono">[] &nbsp; {} &nbsp; () &nbsp; set()</td><td class="mono">any non-empty container</td><td>&mdash;</td></tr>
+        <tr><td class="mono">None</td><td class="mono">any object by default</td><td><code>if x:</code> can't tell <code>None</code> from <code>0</code></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="bust">
+      <span class="tag">The trap in that table</span>
+      <p><code>if not count:</code> fires for both &ldquo;count is zero&rdquo; and &ldquo;count was never set.&rdquo; When the difference matters &mdash; and with counts, prices and flags it always does &mdash; write <code>if count is None:</code> and say what you mean.</p>
+    </div>
+
+    <p><strong><code>for &hellip; else</code></strong> is Python's most misread syntax. The <code>else</code> runs when the loop finished <em>without</em> hitting <code>break</code> &mdash; read it as &ldquo;no break&rdquo;, never as &ldquo;otherwise&rdquo;. It exists to kill the <code>found = False</code> flag variable:</p>
+
+    <div class="formula">for row in rows:
+    if row.id == target:
+        handle(row)
+        break
+else:                      # no break — nothing matched
+    raise KeyError(target)</div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="topic" id="s5">
+  <div class="topic-head">
+    <div class="num">05</div>
+    <h2 class="topic-title">Functions, arguments and return values</h2>
+  </div>
+  <div class="body">
+    <p class="lede">The single highest-value fact in this section: <strong>default arguments are evaluated once, when <code>def</code> runs</strong> &mdash; not on each call.</p>
+
+    <p>Everyone learns this by losing an hour to it. The <code>def</code> statement is executed like any other statement; it builds a function object and stores the defaults <em>on that object</em>. Every call thereafter reuses those same default objects. With an immutable default that's invisible. With a mutable one it's a shared, accumulating bucket.</p>
+  </div>
+
+  <figure>
+    <div class="svg-hold">
+    <svg viewBox="0 0 740 258" role="img" aria-label="A timeline showing the def statement executing once and creating a single empty list as the default, then three separate calls all appending into that same list, so it grows across calls instead of starting fresh.">
+      <text x="20" y="22" font-family="'IBM Plex Mono', monospace" font-size="11.5" letter-spacing="1.3" fill="currentColor" opacity="0.55">def add(item, bucket=[]): bucket.append(item); return bucket</text>
+
+      <defs>
+        <marker id="da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--signal)"/>
+        </marker>
+      </defs>
+
+      <line x1="20" y1="52" x2="720" y2="52" stroke="currentColor" stroke-width="1.2" opacity="0.35"/>
+      <text x="720" y="42" text-anchor="end" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.55">time &#8594;</text>
+
+      <!-- def event -->
+      <circle cx="90" cy="52" r="5" fill="var(--accent)"/>
+      <line x1="90" y1="52" x2="90" y2="84" stroke="var(--accent)" stroke-width="1.2"/>
+      <rect x="24" y="86" width="132" height="34" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="90" y="107" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--accent)">def runs — once</text>
+      <text x="90" y="138" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.6">creates ONE list</text>
+
+      <!-- the single shared object -->
+      <rect x="300" y="96" width="150" height="42" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.8"/>
+      <text x="375" y="122" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="13" fill="var(--signal)">the default list</text>
+      <line x1="156" y1="110" x2="296" y2="115" stroke="var(--signal)" stroke-width="1.4" marker-end="url(#da)"/>
+
+      <!-- calls -->
+      <g>
+        <circle cx="300" cy="52" r="5" fill="var(--signal)"/>
+        <text x="300" y="38" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--signal)">add(1)</text>
+        <line x1="300" y1="57" x2="330" y2="92" stroke="var(--signal)" stroke-width="1.2" opacity="0.8" marker-end="url(#da)"/>
+
+        <circle cx="470" cy="52" r="5" fill="var(--signal)"/>
+        <text x="470" y="38" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--signal)">add(2)</text>
+        <line x1="470" y1="57" x2="428" y2="92" stroke="var(--signal)" stroke-width="1.2" opacity="0.8" marker-end="url(#da)"/>
+
+        <circle cx="620" cy="52" r="5" fill="var(--signal)"/>
+        <text x="620" y="38" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--signal)">add(3)</text>
+        <path d="M 620 57 C 620 82 500 88 452 106" fill="none" stroke="var(--signal)" stroke-width="1.2" opacity="0.8" marker-end="url(#da)"/>
+      </g>
+
+      <text x="375" y="164" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="currentColor" opacity="0.7">every call appends into the same object</text>
+
+      <line x1="20" y1="186" x2="720" y2="186" stroke="currentColor" stroke-width="1" opacity="0.18"/>
+
+      <text x="20" y="210" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">returns:</text>
+      <text x="100" y="210" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--signal)">[1]</text>
+      <text x="160" y="210" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--signal)">[1, 2]</text>
+      <text x="250" y="210" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--signal)">[1, 2, 3]</text>
+      <text x="360" y="210" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor" opacity="0.6">— not [1], [2], [3]</text>
+
+      <text x="20" y="240" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--accent)">fix:  def add(item, bucket=None):  if bucket is None: bucket = []</text>
+    </svg>
+    </div>
+    <figcaption>The <span class="mono">def</span> line executes once and the empty list is built at that moment, then stored on the function object. Three calls, one list. The fix isn't a style preference &mdash; <span class="mono">None</span> is immutable, so a fresh list gets built inside the body on every call, which is what you meant in the first place.</figcaption>
+  </figure>
+
+  <div class="body">
+    <p><strong>Argument passing is neither &ldquo;by value&rdquo; nor &ldquo;by reference.&rdquo;</strong> Both terms come from languages with a different memory model and neither fits. Python passes the <em>binding</em>: the parameter becomes a new name for the caller's object. So a function can mutate what you passed, but cannot rebind your name &mdash; exactly the two cases in the &sect;2 diagram.</p>
+
+    <p><strong>Every function returns something.</strong> A function with no <code>return</code> returns <code>None</code>. So does a bare <code>return</code>. This is why <code>xs = xs.sort()</code> silently destroys your list: <code>sort()</code> mutates in place and returns <code>None</code>. You wanted <code>sorted(xs)</code>.</p>
+
+    <p><strong>Name resolution follows LEGB</strong> &mdash; Local, Enclosing, Global, Built-in. Python walks outward and stops at the first match, which explains both why you can read a global without declaring it and why you can't assign to one by accident:</p>
+  </div>
+
+  <figure>
+    <div class="svg-hold">
+    <svg viewBox="0 0 700 244" role="img" aria-label="Four nested boxes labelled Built-in, Global, Enclosing and Local from outside in. A lookup starts in the Local scope and moves outward through Enclosing, Global and Built-in, stopping at the first match. An assignment always creates or rebinds a name in the Local scope unless declared global or nonlocal.">
+      <rect x="20" y="30" width="440" height="196" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.35"/>
+      <text x="34" y="50" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.1" fill="currentColor" opacity="0.6">B &#183; BUILT-IN</text>
+      <text x="34" y="66" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.45">len, print, dict &#8230;</text>
+
+      <rect x="46" y="76" width="388" height="138" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.5"/>
+      <text x="60" y="96" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.1" fill="currentColor" opacity="0.7">G &#183; GLOBAL</text>
+      <text x="60" y="112" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.5">module top level</text>
+
+      <rect x="72" y="122" width="336" height="80" fill="none" stroke="var(--accent)" stroke-width="1.3"/>
+      <text x="86" y="142" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.1" fill="var(--accent)">E &#183; ENCLOSING</text>
+      <text x="86" y="158" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.5">outer function</text>
+
+      <rect x="98" y="164" width="284" height="30" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.6"/>
+      <text x="112" y="184" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.1" fill="var(--signal)">L &#183; LOCAL &#8212; lookup starts here</text>
+
+      <defs>
+        <marker id="la" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--signal)"/>
+        </marker>
+      </defs>
+      <path d="M 392 179 C 470 179 470 60 470 52" fill="none" stroke="var(--signal)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#la)"/>
+      <text x="486" y="120" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--signal)">reading a name</text>
+      <text x="486" y="136" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--signal)">walks outward and</text>
+      <text x="486" y="152" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--signal)">stops at first match</text>
+
+      <text x="486" y="184" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--accent)">assigning a name</text>
+      <text x="486" y="200" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--accent)">always writes Local</text>
+      <text x="486" y="216" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--accent)">unless global/nonlocal</text>
+    </svg>
+    </div>
+    <figcaption>Reads walk outward; writes never do. That asymmetry is the whole explanation for <span class="mono">UnboundLocalError</span> &mdash; assigning to a name anywhere in a function makes it local for the <em>entire</em> function, so a read before that assignment finds a local that doesn't have a value yet rather than falling through to the global you expected.</figcaption>
+  </figure>
+</section>
+
+<!-- 6 -->
+<section class="topic" id="s6">
+  <div class="topic-head">
+    <div class="num">06</div>
+    <h2 class="topic-title">Lambda functions</h2>
+  </div>
+  <div class="body">
+    <p class="lede">A lambda is an <em>expression</em> that evaluates to a function. <code>def</code> is a <em>statement</em>. That grammatical difference is the entire reason lambda exists &mdash; and the entire limit on what it can do.</p>
+
+    <p>Because it must be an expression, its body is a single expression whose value is returned implicitly. No statements: no <code>if/else</code> blocks (the ternary is an expression, so that's fine), no loops, no assignment, no <code>try</code>. It's not a lesser <code>def</code>; it's a function literal for places where a statement isn't allowed.</p>
+
+    <div class="formula">sorted(rows, key=lambda r: r.score)          # idiomatic
+sorted(rows, key=lambda r: (-r.score, r.name))  # multi-key, note the tuple
+
+f = lambda x: x * 2                          # don't — just use def
+def f(x): return x * 2                       # same thing, and it has a name</div>
+
+    <p>PEP 8 says not to bind a lambda to a name, and the reason is practical rather than stylistic: a <code>def</code> carries its name into tracebacks and <code>repr</code>. A named lambda shows up as <code>&lt;lambda&gt;</code> in the stack trace, so you lose the one piece of information you wanted when something broke.</p>
+
+    <div class="bust">
+      <span class="tag">The late-binding trap</span>
+      <p><code>[lambda: i for i in range(3)]</code> gives three functions that all return <code>2</code>. A closure captures the <em>variable</em>, not its value at creation time, and by the time you call them the loop has finished. Bind it as a default &mdash; <code>lambda i=i: i</code> &mdash; which, per &sect;5, is evaluated at definition time and freezes the value. The two traps in this note are the same mechanism read from opposite ends.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="topic" id="s7">
+  <div class="topic-head">
+    <div class="num">07</div>
+    <h2 class="topic-title">List, dict and set comprehensions</h2>
+  </div>
+  <div class="body">
+    <p class="lede">A comprehension isn't shorthand for a loop. It compiles to its own scope with a specialised opcode &mdash; which is why it's faster and why the loop variable doesn't leak.</p>
+
+    <p>Read the order once and it stops looking backwards: <strong>output expression, then the loops in the order you'd write them, then the filter.</strong></p>
+  </div>
+
+  <figure>
+    <div class="svg-hold">
+    <svg viewBox="0 0 740 226" role="img" aria-label="A list comprehension broken into its three labelled parts — output expression, for clause, and if filter — shown above the equivalent explicit loop, with each part connected to the line of the loop it corresponds to.">
+      <text x="20" y="22" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.3" fill="var(--signal)">COMPREHENSION</text>
+
+      <rect x="20" y="36" width="76" height="34" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.4"/>
+      <text x="58" y="58" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="13" fill="var(--signal)">x * 2</text>
+      <rect x="100" y="36" width="132" height="34" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="166" y="58" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="13" fill="var(--accent)">for x in xs</text>
+      <rect x="236" y="36" width="128" height="34" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.7"/>
+      <text x="300" y="58" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="13" fill="currentColor">if x &gt; 0</text>
+
+      <text x="58" y="86" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10" fill="var(--signal)">output</text>
+      <text x="166" y="86" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10" fill="var(--accent)">iterate</text>
+      <text x="300" y="86" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10" fill="currentColor" opacity="0.6">filter</text>
+
+      <defs>
+        <marker id="ca" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <path d="M 166 96 C 166 116 120 116 120 138" fill="none" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#ca)" opacity="0.8"/>
+      <path d="M 300 96 C 300 122 168 128 168 166" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.5" marker-end="url(#ca)"/>
+      <path d="M 58 96 C 58 130 206 158 206 192" fill="none" stroke="var(--signal)" stroke-width="1.2" marker-end="url(#ca)" opacity="0.8"/>
+
+      <line x1="400" y1="30" x2="400" y2="212" stroke="currentColor" stroke-width="1" opacity="0.18"/>
+
+      <text x="424" y="22" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.3" fill="currentColor" opacity="0.55">WHAT IT COMPILES TO</text>
+      <text x="424" y="52" font-family="'IBM Plex Mono', monospace" font-size="12.5" fill="currentColor" opacity="0.75">out = []</text>
+      <text x="424" y="74" font-family="'IBM Plex Mono', monospace" font-size="12.5" fill="var(--accent)">for x in xs:</text>
+      <text x="448" y="96" font-family="'IBM Plex Mono', monospace" font-size="12.5" fill="currentColor" opacity="0.75">if x &gt; 0:</text>
+      <text x="472" y="118" font-family="'IBM Plex Mono', monospace" font-size="12.5" fill="var(--signal)">out.append(x * 2)</text>
+      <text x="424" y="146" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor" opacity="0.55">…but in its own scope, with the</text>
+      <text x="424" y="162" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor" opacity="0.55">append done in C rather than by</text>
+      <text x="424" y="178" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor" opacity="0.55">re-looking-up .append each pass.</text>
+
+      <text x="24" y="146" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--accent)">iterate first</text>
+      <text x="24" y="174" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor" opacity="0.6">then filter</text>
+      <text x="24" y="200" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--signal)">then build the output</text>
+    </svg>
+    </div>
+    <figcaption>Written left-to-right the parts appear as output-iterate-filter; executed, they run iterate-filter-output. Reading a comprehension by mentally unrolling it into the loop on the right is the reliable way to parse a dense one &mdash; and the moment that unrolling takes real effort is the moment to write the loop instead.</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>All four forms use the same grammar, and the brackets pick the result type:</p>
+
+    <div class="formula">[x * 2 for x in xs]            # list
+{x: x * 2 for x in xs}         # dict — note the colon
+{x * 2 for x in xs}            # set  — dedupes for free
+(x * 2 for x in xs)            # GENERATOR — lazy, not a tuple</div>
+
+    <p>That last one is the one that surprises people: parentheses don't give you a tuple comprehension, they give you a generator expression. There is no tuple comprehension; use <code>tuple(...)</code> around a genexp. The distinction is real work &mdash; <code>sum(x*x for x in big)</code> never materialises a list, so it costs constant memory.</p>
+
+    <p><strong>Nested comprehensions read outer-to-inner</strong>, same order as the equivalent nested loops:</p>
+
+    <div class="formula">[c for row in grid for c in row]     # flatten — for row, then for c
+[[c for c in row] for row in grid]   # nested lists — inner is its own comprehension</div>
+
+    <div class="bust">
+      <span class="tag">Know when to stop</span>
+      <p>A comprehension is the right tool when it fits on one line and states a transformation. When it grows a second filter, a ternary and a nested loop, it has stopped being clearer than the loop it replaces. Comprehensions are for expressing <em>what</em> the collection is; the moment you need to explain <em>how</em> it's built, write the loop.</p>
+    </div>
+
+    <div class="takeaway">
+      <span class="tag">Carries forward</span>
+      <p>The generator expression above is the doorway into &sect;3's iterators-and-generators topic, and the laziness it buys is the same mechanism that makes <code>range</code>, <code>zip</code> and <code>enumerate</code> free. This section and that one are really one idea split across two roadmap rows.</p>
+    </div>
+  </div>
+</section>
+
+<!-- retrieval -->
+<section class="retrieval">
+  <h2>Retrieval bank</h2>
+  <p>Cover the notes and answer from memory before opening anything. Retrieval you don't check can reinforce errors &mdash; and retrieval that feels easy isn't doing any work.</p>
+  <div class="qlist">
+
+    <details>
+      <summary>Why is <code>b = a</code> not a copy, and what is it instead?</summary>
+      <div class="ans">Python names are <strong>labels bound to objects</strong>, not boxes holding values. <code>b = a</code> attaches a second label to the same object. Nothing is copied unless you explicitly ask for a copy.</div>
+    </details>
+
+    <details>
+      <summary>Predict both: <code>b.append(3)</code> versus <code>b = b + [3]</code>, where <code>a</code> and <code>b</code> name the same list.</summary>
+      <div class="ans"><code>append</code> <strong>mutates the shared object</strong>, so <code>a</code> sees the change. <code>b = b + [3]</code> <strong>builds a new list and rebinds only <code>b</code></strong>, leaving <code>a</code> on the original. Mutation reaches through every label; rebinding moves one.</div>
+    </details>
+
+    <details>
+      <summary>Dynamically typed and strongly typed — what's the difference?</summary>
+      <div class="ans"><strong>Dynamic:</strong> names have no declared type and can be rebound to anything. <strong>Strong:</strong> the object's type is enforced, so <code>"3" + 4</code> raises <code>TypeError</code> rather than silently coercing. Python is both; JavaScript is dynamic but weak.</div>
+    </details>
+
+    <details>
+      <summary>When is <code>is</code> the right operator, and why does testing it on integers mislead you?</summary>
+      <div class="ans">Only for the singletons <code>None</code>, <code>True</code>, <code>False</code>. It appears to work on small ints because CPython <strong>caches &minus;5 to 256</strong> and interns short strings &mdash; an implementation detail, not a guarantee. <code>==</code> compares value; <code>is</code> compares identity.</div>
+    </details>
+
+    <details>
+      <summary>What survives into the running program — a <code>#</code> comment or a docstring?</summary>
+      <div class="ans">The <strong>docstring</strong>. It's bound to <code>__doc__</code> and readable at runtime by <code>help()</code>, your IDE, pydoc and doctest. A <code>#</code> comment is discarded before bytecode exists.</div>
+    </details>
+
+    <details>
+      <summary><code>if not count:</code> — what two different situations does this conflate?</summary>
+      <div class="ans">&ldquo;<code>count</code> is <strong>zero</strong>&rdquo; and &ldquo;<code>count</code> is <strong><code>None</code></strong>&rdquo; — both falsy. When a legitimate zero must be distinguishable from a missing value, write <code>if count is None:</code>. Also worth remembering: <code>"0"</code> and <code>" "</code> are <em>truthy</em> strings.</div>
+    </details>
+
+    <details>
+      <summary>When does the <code>else</code> on a <code>for</code> loop run?</summary>
+      <div class="ans">When the loop finished <strong>without hitting <code>break</code></strong>. Read it as &ldquo;no break&rdquo;, never as &ldquo;otherwise&rdquo;. It exists to eliminate the <code>found = False</code> flag variable.</div>
+    </details>
+
+    <details>
+      <summary>Explain the mutable default argument bug, and give the fix.</summary>
+      <div class="ans">Defaults are evaluated <strong>once, when <code>def</code> executes</strong>, and stored on the function object — so a mutable default is one object shared by every call, accumulating state. Fix: default to <code>None</code> and build the real value inside the body (<code>if bucket is None: bucket = []</code>), because <code>None</code> is immutable and can't accumulate.</div>
+    </details>
+
+    <details>
+      <summary>Why does <code>xs = xs.sort()</code> destroy your list?</summary>
+      <div class="ans"><code>list.sort()</code> sorts <strong>in place and returns <code>None</code></strong>, so you rebind <code>xs</code> to <code>None</code>. Use <code>sorted(xs)</code> for a new list, or call <code>xs.sort()</code> as a bare statement. General rule: Python's in-place methods return <code>None</code> precisely so this mistake is loud rather than silent.</div>
+    </details>
+
+    <details>
+      <summary>What does LEGB stand for, and what causes <code>UnboundLocalError</code>?</summary>
+      <div class="ans"><strong>Local, Enclosing, Global, Built-in</strong> — the order a name lookup walks outward, stopping at the first match. Reads walk outward; <strong>writes always target Local</strong>. Assigning to a name anywhere in a function makes it local for the whole function, so a read before that assignment finds an unfilled local instead of the global. Fix with <code>global</code> or <code>nonlocal</code> — or better, don't.</div>
+    </details>
+
+    <details>
+      <summary>Why does <code>[lambda: i for i in range(3)]</code> produce three functions that all return 2?</summary>
+      <div class="ans">A closure captures the <strong>variable, not its value</strong> at creation time; by the time you call them the loop has ended with <code>i == 2</code>. Fix by binding it as a default: <code>lambda i=i: i</code> — which works precisely <em>because</em> defaults are evaluated at definition time. Same mechanism as the mutable-default bug, read from the other end.</div>
+    </details>
+
+    <details>
+      <summary>What does <code>(x * 2 for x in xs)</code> produce, and why does it matter?</summary>
+      <div class="ans">A <strong>generator expression</strong>, not a tuple — there is no tuple comprehension. It's lazy, so <code>sum(x*x for x in big)</code> never materialises a list and costs constant memory. Wrap in <code>tuple(...)</code> if you actually want a tuple.</div>
+    </details>
+
+  </div>
+</section>
+
+<footer>
+  <span>AI Engineer Notes</span>
+  <span>Prerequisites &middot; Python &middot; &sect;1 Core Fundamentals</span>
+  <span>Retrieval-practice format after Dunlosky et al. 2013</span>
+</footer>
+
+</div>
+
+</body>
+</html>

@@ -10,8 +10,8 @@
   .crumb{color:var(--muted);letter-spacing:.06em}
   .crumb b{color:var(--ink);font-weight:600}
   .note-chrome .spacer{flex:1 1 auto}
-  .nav-adj{display:inline-flex;gap:7px;align-items:baseline;max-width:280px}
-  .nav-dir{color:var(--muted)}
+  .nav-adj{display:inline-flex;gap:7px;align-items:baseline;max-width:260px}
+  .nav-dir{color:var(--muted);white-space:nowrap}
   .nav-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #theme-toggle{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;
     text-transform:uppercase;font-weight:600;color:var(--muted);background:transparent;
@@ -21,7 +21,7 @@
 </style>
 <nav class="note-chrome"><div class="inner">
   <a href="../../../">&larr; All notes</a>
-  <span class="crumb">AI Engineer Track / LLM 101 / <b>&sect;1</b></span>
+  <span class="crumb">LLM 101 / <b>&sect;1</b></span>
   <span class="spacer"></span>
   
   
@@ -143,34 +143,6 @@ h1 {
   max-width: 56ch;
   margin: 0;
 }
-.meta-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0;
-  border: 1px solid var(--rule);
-  background: var(--surface);
-  margin-top: 4px;
-}
-.meta-strip div {
-  flex: 1 1 130px;
-  padding: 12px 16px;
-  border-right: 1px solid var(--rule);
-}
-.meta-strip div:last-child { border-right: 0; }
-.meta-k {
-  font-family: var(--f-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  display: block;
-}
-.meta-v {
-  font-family: var(--f-mono);
-  font-size: 15px;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink);
-}
 
 /* ---------- how to use ---------- */
 
@@ -222,15 +194,6 @@ h2.topic-title {
   letter-spacing: -0.015em;
   margin: 0;
   text-wrap: balance;
-}
-.roadmap-tag {
-  grid-column: 2;
-  font-family: var(--f-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-top: 8px;
 }
 
 .body { max-width: var(--col); margin-left: 64px; }
@@ -442,13 +405,7 @@ footer {
   </div>
   <h1>Next-Token Field Notes</h1>
   <p class="standfirst">Six ideas that turn a large language model from magic into machinery &mdash; each one written out in prose, then drawn as the mechanism it actually is.</p>
-  <div class="meta-strip">
-    <div><span class="meta-k">Items</span><span class="meta-v">6</span></div>
-    <div><span class="meta-k">Budgeted</span><span class="meta-v">5.25 hrs</span></div>
-    <div><span class="meta-k">Target</span><span class="meta-v">2026-09-08</span></div>
-    <div><span class="meta-k">Next up</span><span class="meta-v">&sect;2 Transformer</span></div>
-  </div>
-</header>
+  </header>
 
 <div class="howto">
   <h2>How to use these notes</h2>
@@ -462,7 +419,6 @@ footer {
   <div class="topic-head">
     <div class="num">01</div>
     <h2 class="topic-title">What &ldquo;language modeling&rdquo; actually means</h2>
-    <div class="roadmap-tag">Roadmap item &middot; 1.0 hr &middot; done</div>
   </div>
   <div class="body">
 
@@ -530,7 +486,6 @@ footer {
   <div class="topic-head">
     <div class="num">02</div>
     <h2 class="topic-title">Next-token prediction intuition</h2>
-    <div class="roadmap-tag">Roadmap item &middot; 1.0 hr &middot; done</div>
   </div>
   <div class="body">
 
@@ -635,7 +590,6 @@ footer {
   <div class="topic-head">
     <div class="num">03</div>
     <h2 class="topic-title">Why next-token prediction produces reasoning-like behavior</h2>
-    <div class="roadmap-tag">Roadmap item &middot; 1.0 hr &middot; not started</div>
   </div>
   <div class="body">
 
@@ -735,7 +689,6 @@ footer {
   <div class="topic-head">
     <div class="num">04</div>
     <h2 class="topic-title">Emergence &amp; scaling laws</h2>
-    <div class="roadmap-tag">Roadmap item &middot; 1.0 hr &middot; not started</div>
   </div>
   <div class="body">
 
@@ -814,7 +767,6 @@ footer {
   <div class="topic-head">
     <div class="num">05</div>
     <h2 class="topic-title">Foundation models vs task-specific models</h2>
-    <div class="roadmap-tag">Roadmap item &middot; 0.5 hr &middot; not started</div>
   </div>
   <div class="body">
 
@@ -888,7 +840,6 @@ footer {
   <div class="topic-head">
     <div class="num">06</div>
     <h2 class="topic-title">Generative vs representation models</h2>
-    <div class="roadmap-tag">Roadmap item &middot; 0.75 hr &middot; not started</div>
   </div>
   <div class="body">
 

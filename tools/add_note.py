@@ -2,13 +2,13 @@
 """Install a published note into the site.
 
 Takes the self-contained HTML of a note (as published to an Artifact), files it
-under the roadmap section it belongs to, records it in data/notes.json, and
+under the section it belongs to, records it in data/notes.json, and
 rebuilds the hub.
 
     python3 tools/add_note.py --file note.html --topic llm-101 --section 2
 
-Topic slugs and section numbers come from data/roadmap.json; run with --list to
-see what's available.
+Topic slugs and section numbers come from data/structure.json; run with --list to
+see what is available.
 """
 import argparse, datetime, json, os, re, subprocess, sys
 
@@ -20,8 +20,8 @@ def load(name):
         return json.load(f)
 
 
-def find_section(roadmap, topic_slug, n):
-    for tr in roadmap["tracks"]:
+def find_section(structure, topic_slug, n):
+    for tr in structure["tracks"]:
         for t in tr["topics"]:
             if t["slug"] != topic_slug:
                 continue
@@ -34,8 +34,8 @@ def find_section(roadmap, topic_slug, n):
     raise SystemExit(f"no topic '{topic_slug}'. Use --list to see them.")
 
 
-def list_topics(roadmap):
-    for tr in roadmap["tracks"]:
+def list_topics(structure):
+    for tr in structure["tracks"]:
         print(f"\n{tr['name']}")
         for t in tr["topics"]:
             ns = ", ".join(str(s["n"]) for s in t["sections"])
@@ -50,20 +50,20 @@ def title_of(src):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--file", help="self-contained note HTML")
-    ap.add_argument("--topic", help="topic slug from roadmap.json")
+    ap.add_argument("--topic", help="topic slug")
     ap.add_argument("--section", type=int, help="section number within the topic")
     ap.add_argument("--artifact", help="artifact URL, recorded for later re-syncing")
     ap.add_argument("--list", action="store_true", help="list topics and exit")
     a = ap.parse_args()
 
-    roadmap = load("roadmap.json")
+    structure = load("structure.json")
     if a.list:
-        list_topics(roadmap)
+        list_topics(structure)
         return
     if not (a.file and a.topic and a.section):
         ap.error("--file, --topic and --section are required")
 
-    tr, t, s = find_section(roadmap, a.topic, a.section)
+    tr, t, s = find_section(structure, a.topic, a.section)
     src = open(os.path.expanduser(a.file)).read()
 
     rel = os.path.join("notes", t["slug"], s["slug"])
