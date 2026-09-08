@@ -8,7 +8,7 @@ freeze at whatever existed when the note was first added.
 
     python3 tools/build_index.py
 """
-import html, json, os, re
+import hashlib, html, json, os, re
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 START, END = "<!--CHROME:START-->", "<!--CHROME:END-->"
@@ -119,6 +119,16 @@ def refresh_chrome(notes, lookup):
 
 # ------------------------------------------------------------------- the index
 
+def asset_version(rel):
+    """Short content hash, appended to the stylesheet link so a rebuild never
+    serves a stale cached copy to someone who visited before."""
+    path = os.path.join(ROOT, rel)
+    if not os.path.exists(path):
+        return "0"
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()[:8]
+
+
 def build_index(structure, notes):
     have = {}
     for n in notes:
@@ -158,7 +168,7 @@ def build_index(structure, notes):
 <title>AI Engineer Notes</title>
 <meta name="description" content="Notes on language models, Python and the systems around them — each idea in prose and as a diagram, closing with a retrieval bank.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
-<link rel="stylesheet" href="assets/hub.css">
+<link rel="stylesheet" href="assets/hub.css?v={asset_version("assets/hub.css")}">
 </head>
 <body>
 <button id="theme-toggle" type="button">Theme</button>
