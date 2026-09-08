@@ -32,3 +32,12 @@ python3 tools/build_index.py
 index; `--list` shows the available topic slugs. `build_index.py` regenerates
 the index and refreshes the navigation inside every note, so prev/next links
 stay correct as later notes land.
+
+Diagrams are hand-authored SVG with absolute coordinates, so a moved label can
+land on top of something without anyone noticing. `tools/check_figures.js`
+reports elements that escape their viewBox and text labels that collide:
+
+```bash
+agent-browser open <note url>
+agent-browser eval "$(cat tools/check_figures.js)"
+```
