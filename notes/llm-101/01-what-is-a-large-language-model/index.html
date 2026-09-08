@@ -284,15 +284,21 @@ figure {
 figure .svg-hold { overflow-x: auto; }
 figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
 figcaption {
-  font-family: var(--f-mono);
-  font-size: 12.5px;
-  line-height: 1.55;
+  font-family: var(--f-body);
+  font-size: 14.5px;
+  line-height: 1.62;
   color: var(--muted);
-  margin-top: 12px;
-  padding-left: 12px;
+  margin-top: 14px;
+  padding-left: 16px;
   border-left: 2px solid var(--rule);
-  max-width: 74ch;
+  max-width: 66ch;
 }
+figcaption .mono, figcaption code {
+  font-family: var(--f-mono);
+  font-size: 0.88em;
+  color: var(--ink);
+}
+figcaption em { color: var(--ink); }
 
 /* tables */
 .tbl-hold { overflow-x: auto; margin: 26px 0; }
@@ -558,15 +564,15 @@ footer {
       <rect x="532" y="116" width="28" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.6"/>
       <rect x="566" y="156" width="28" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.6"/>
 
-      <path d="M 526 89 C 604 89 604 129 566 129" fill="none" stroke="var(--signal)" stroke-width="1.3" marker-end="url(#ar1)"/>
-      <path d="M 560 129 C 638 129 638 169 600 169" fill="none" stroke="var(--signal)" stroke-width="1.3" marker-end="url(#ar1)"/>
       <defs>
-        <marker id="ar1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <marker id="ar1" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--signal)"/>
         </marker>
       </defs>
-      <text x="672" y="126" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">output</text>
-      <text x="672" y="140" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">→ input</text>
+      <line x1="512" y1="103" x2="512" y2="114" stroke="var(--signal)" stroke-width="1.5" marker-end="url(#ar1)"/>
+      <line x1="546" y1="143" x2="546" y2="154" stroke="var(--signal)" stroke-width="1.5" marker-end="url(#ar1)"/>
+      <text x="612" y="126" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">each generated token</text>
+      <text x="612" y="140" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">joins the next input</text>
 
       <text x="570" y="200" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">1 token · 1 pass · repeat</text>
     </svg>
@@ -735,6 +741,7 @@ footer {
       <polyline points="452,192 596,192 596,80 704,72" fill="none" stroke="var(--signal)" stroke-width="2.2"/>
       <line x1="596" y1="52" x2="596" y2="196" stroke="var(--signal)" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>
       <text x="596" y="44" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">&ldquo;emergence&rdquo;</text>
+      <rect x="446" y="94" width="156" height="46" fill="var(--bg)"/>
       <line x1="454" y1="108" x2="480" y2="108" stroke="var(--accent)" stroke-width="2.2"/>
       <text x="486" y="112" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--accent)">log-prob smooth</text>
       <line x1="454" y1="128" x2="480" y2="128" stroke="var(--signal)" stroke-width="2.2"/>
@@ -748,7 +755,7 @@ footer {
 
   <div class="body">
     <div class="bust">
-      <span class="tag">The nuance most roadmaps skip</span>
+      <span class="tag">The nuance most courses skip</span>
       <p>Schaeffer et al. (2023), <em>&ldquo;Are Emergent Abilities of Large Language Models a Mirage?&rdquo;</em> &mdash; much of the apparent discontinuity is an artifact of the <strong>metric</strong>, not a phase change in the model.</p>
       <p>The takeaway isn't &ldquo;emergence is fake.&rdquo; It's sharper and far more useful: the underlying capability improves smoothly and predictably, while <em>your measurement of it</em> can be a step function. Which means a benchmark that reads 0% today can read 60% at the next scale-up with nothing surprising having happened inside the model.</p>
     </div>
@@ -784,10 +791,6 @@ footer {
     <svg viewBox="0 0 740 268" role="img" aria-label="A staircase of six adaptation methods rising left to right: prompting, few-shot, RAG, LoRA or PEFT, full fine-tune, and continued pretraining. Cost, data required and commitment all increase to the right. An annotation marks the point where you stop owning only a prompt and start owning model weights.">
       <text x="16" y="24" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.3" fill="currentColor" opacity="0.55">THE ADAPTATION LADDER · climb only as far as the problem forces you</text>
 
-      <g stroke="currentColor" stroke-width="0.7" opacity="0.14">
-        <line x1="16" y1="70" x2="724" y2="70"/><line x1="16" y1="110" x2="724" y2="110"/><line x1="16" y1="150" x2="724" y2="150"/><line x1="16" y1="190" x2="724" y2="190"/>
-      </g>
-
       <rect x="20"  y="186" width="108" height="30" fill="var(--accent-dim)"  stroke="var(--accent)" stroke-width="1.3"/>
       <rect x="136" y="170" width="108" height="46" fill="var(--accent-dim)"  stroke="var(--accent)" stroke-width="1.3"/>
       <rect x="252" y="148" width="108" height="68" fill="var(--accent-dim)"  stroke="var(--accent)" stroke-width="1.3"/>
@@ -809,9 +812,9 @@ footer {
       <text x="538" y="206" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.65">10³+ examples</text>
       <text x="654" y="206" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.65">10⁹+ tokens</text>
 
-      <line x1="364" y1="40" x2="364" y2="222" stroke="var(--signal)" stroke-width="1.2" stroke-dasharray="4 4"/>
-      <text x="360" y="36" text-anchor="end" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">you own a prompt ←</text>
-      <text x="370" y="36" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">→ you own weights</text>
+      <line x1="364" y1="60" x2="364" y2="222" stroke="var(--signal)" stroke-width="1.2" stroke-dasharray="4 4"/>
+      <text x="356" y="88" text-anchor="end" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">you own a prompt ←</text>
+      <text x="372" y="88" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">→ you own weights</text>
 
       <line x1="20" y1="240" x2="700" y2="240" stroke="currentColor" stroke-width="1.2" opacity="0.6" marker-end="url(#ar4)"/>
       <defs>
@@ -968,7 +971,7 @@ footer {
       <p>You can, and they will be mediocre. Causal masking gives you a half-blind representation, and nothing in next-token training optimised that vector space for cosine similarity. Purpose-built embedding models &mdash; often a hundred times smaller &mdash; beat frontier LLMs at retrieval.</p>
     </div>
 
-    <p>Worth knowing about the third family: <strong>encoder-decoder</strong> (T5, BART). The encoder reads bidirectionally, the decoder generates causally, and cross-attention bridges them. Largely displaced by decoder-only for general-purpose LLMs, but still strong for fixed input&rarr;output transforms like translation. Your roadmap picks this up in &sect;2 under &ldquo;Encoder-only vs Decoder-only vs Encoder-Decoder.&rdquo;</p>
+    <p>Worth knowing about the third family: <strong>encoder-decoder</strong> (T5, BART). The encoder reads bidirectionally, the decoder generates causally, and cross-attention bridges them. Largely displaced by decoder-only for general-purpose LLMs, but still strong for fixed input&rarr;output transforms like translation. &sect;2 picks this up under &ldquo;Encoder-only vs Decoder-only vs Encoder-Decoder.&rdquo;</p>
   </div>
 </section>
 

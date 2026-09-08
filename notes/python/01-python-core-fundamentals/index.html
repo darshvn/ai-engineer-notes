@@ -250,15 +250,21 @@ figure {
 figure .svg-hold { overflow-x: auto; }
 figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
 figcaption {
-  font-family: var(--f-mono);
-  font-size: 12.5px;
-  line-height: 1.55;
+  font-family: var(--f-body);
+  font-size: 14.5px;
+  line-height: 1.62;
   color: var(--muted);
-  margin-top: 12px;
-  padding-left: 12px;
+  margin-top: 14px;
+  padding-left: 16px;
   border-left: 2px solid var(--rule);
-  max-width: 74ch;
+  max-width: 66ch;
 }
+figcaption .mono, figcaption code {
+  font-family: var(--f-mono);
+  font-size: 0.88em;
+  color: var(--ink);
+}
+figcaption em { color: var(--ink); }
 
 /* tables */
 .tbl-hold { overflow-x: auto; margin: 26px 0; }
@@ -874,7 +880,7 @@ def f(x): return x * 2                       # same thing, and it has a name</di
 
     <div class="takeaway">
       <span class="tag">Carries forward</span>
-      <p>The generator expression above is the doorway into &sect;3's iterators-and-generators topic, and the laziness it buys is the same mechanism that makes <code>range</code>, <code>zip</code> and <code>enumerate</code> free. This section and that one are really one idea split across two roadmap rows.</p>
+      <p>The generator expression above is the doorway into &sect;3's iterators-and-generators topic, and the laziness it buys is the same mechanism that makes <code>range</code>, <code>zip</code> and <code>enumerate</code> free. This section and that one are really one idea split across two headings.</p>
     </div>
   </div>
 </section>
