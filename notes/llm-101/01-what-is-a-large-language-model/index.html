@@ -1,0 +1,1121 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light dark}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<!--CHROME:START-->
+<style>
+  .note-chrome{position:sticky;top:0;z-index:40;background:var(--surface);
+    border-bottom:1px solid var(--rule);font-family:var(--f-mono);font-size:11.5px}
+  .note-chrome .inner{max-width:940px;margin:0 auto;padding:10px 24px;
+    display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
+  .note-chrome a{color:var(--accent);text-decoration:none}
+  .note-chrome a:hover{text-decoration:underline}
+  .crumb{color:var(--muted);letter-spacing:.06em}
+  .crumb b{color:var(--ink);font-weight:600}
+  .note-chrome .spacer{flex:1 1 auto}
+  .nav-adj{display:inline-flex;gap:7px;align-items:baseline;max-width:280px}
+  .nav-dir{color:var(--muted)}
+  .nav-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #theme-toggle{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;font-weight:600;color:var(--muted);background:transparent;
+    border:1px solid var(--rule);border-radius:2px;padding:5px 9px;cursor:pointer;line-height:1}
+  #theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
+  @media print{.note-chrome{display:none}}
+</style>
+<nav class="note-chrome"><div class="inner">
+  <a href="../../../">&larr; All notes</a>
+  <span class="crumb">AI Engineer Track / LLM 101 / <b>&sect;1</b></span>
+  <span class="spacer"></span>
+  
+  
+  <button id="theme-toggle" type="button">Theme</button>
+</div></nav>
+<script>
+(function(){var r=document.documentElement,b=document.getElementById('theme-toggle'),K='aen-theme';
+function sd(){return !!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)}
+function ap(t){t?r.setAttribute('data-theme',t):r.removeAttribute('data-theme');
+var d=t?t==='dark':sd();b.textContent=d?'Light':'Dark';
+b.setAttribute('aria-label','Switch to '+(d?'light':'dark')+' theme')}
+var s=null;try{s=localStorage.getItem(K)}catch(e){}ap(s);
+b.addEventListener('click',function(){var c=r.getAttribute('data-theme'),
+d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch(e){}});})();
+</script>
+<!--CHROME:END-->
+<title>Next-Token Field Notes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
+<style>
+:root {
+  --bg:        #E9EBE7;
+  --surface:   #F6F7F4;
+  --surface-2: #DFE3DE;
+  --ink:       #14181A;
+  --muted:     #59635F;
+  --rule:      #C9CFC8;
+  --accent:    #146B5F;
+  --accent-dim:#DCE8E4;
+  --signal:    #9A2C6B;
+  --signal-dim:#F0DEE8;
+
+  --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --f-body:    "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --f-mono:    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --col: 66ch;
+  --wide: 860px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:        #121614;
+    --surface:   #1A201D;
+    --surface-2: #232A27;
+    --ink:       #E6EAE6;
+    --muted:     #929F99;
+    --rule:      #2E3733;
+    --accent:    #56BCAC;
+    --accent-dim:#1C2E2B;
+    --signal:    #E982B8;
+    --signal-dim:#33202B;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:        #121614;
+  --surface:   #1A201D;
+  --surface-2: #232A27;
+  --ink:       #E6EAE6;
+  --muted:     #929F99;
+  --rule:      #2E3733;
+  --accent:    #56BCAC;
+  --accent-dim:#1C2E2B;
+  --signal:    #E982B8;
+  --signal-dim:#33202B;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16.5px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 0 24px 96px;
+}
+
+/* ---------- masthead ---------- */
+
+.mast {
+  padding: 72px 0 40px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+}
+.eyebrow span.sep { color: var(--rule); }
+h1 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+.standfirst {
+  font-family: var(--f-display);
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 56ch;
+  margin: 0;
+}
+.meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  margin-top: 4px;
+}
+.meta-strip div {
+  flex: 1 1 130px;
+  padding: 12px 16px;
+  border-right: 1px solid var(--rule);
+}
+.meta-strip div:last-child { border-right: 0; }
+.meta-k {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+}
+.meta-v {
+  font-family: var(--f-mono);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* ---------- how to use ---------- */
+
+.howto {
+  margin: 40px 0 0;
+  padding: 24px 26px;
+  background: var(--accent-dim);
+  border-left: 3px solid var(--accent);
+}
+.howto h2 {
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.howto p { margin: 0 0 10px; max-width: 62ch; font-size: 15.5px; }
+.howto p:last-child { margin-bottom: 0; }
+
+/* ---------- sections ---------- */
+
+section.topic {
+  padding-top: 64px;
+  scroll-margin-top: 24px;
+}
+.topic-head {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 0 18px;
+  align-items: start;
+  border-top: 1px solid var(--rule);
+  padding-top: 20px;
+}
+.num {
+  font-family: var(--f-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--signal);
+  padding-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+h2.topic-title {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: clamp(1.7rem, 3.6vw, 2.2rem);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin: 0;
+  text-wrap: balance;
+}
+.roadmap-tag {
+  grid-column: 2;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.body { max-width: var(--col); margin-left: 64px; }
+@media (max-width: 640px) { .body { margin-left: 0; } .topic-head { grid-template-columns: 34px 1fr; gap: 0 12px; } }
+
+.body p { margin: 18px 0; }
+.body ul, .body ol { margin: 18px 0; padding-left: 22px; }
+.body li { margin: 7px 0; }
+
+.lede {
+  font-family: var(--f-display);
+  font-size: 1.28rem;
+  line-height: 1.45;
+  color: var(--ink);
+  border-left: 3px solid var(--signal);
+  padding-left: 18px;
+  margin: 24px 0 26px !important;
+}
+
+code, .mono { font-family: var(--f-mono); font-size: 0.88em; }
+.body code {
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+strong { font-weight: 600; }
+em { font-style: italic; }
+
+.formula {
+  font-family: var(--f-mono);
+  font-size: 14.5px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 16px 18px;
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.75;
+  margin: 22px 0;
+}
+
+/* misconception */
+.bust {
+  border: 1px solid var(--signal);
+  background: var(--signal-dim);
+  padding: 18px 20px;
+  margin: 26px 0;
+}
+.bust .tag {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--signal);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+.bust p { margin: 0 0 10px; font-size: 15.5px; }
+.bust p:last-child { margin-bottom: 0; }
+
+/* takeaway */
+.takeaway {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: baseline;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 14px 0;
+  margin: 28px 0 8px;
+}
+.takeaway .tag {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.takeaway p { margin: 0; font-size: 15.5px; }
+
+/* figures */
+figure {
+  margin: 34px 0;
+  max-width: var(--wide);
+}
+figure .svg-hold { overflow-x: auto; }
+figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
+figcaption {
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin-top: 12px;
+  padding-left: 12px;
+  border-left: 2px solid var(--rule);
+  max-width: 74ch;
+}
+
+/* tables */
+.tbl-hold { overflow-x: auto; margin: 26px 0; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14.5px;
+  min-width: 520px;
+}
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+th {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--ink);
+}
+td:first-child { font-weight: 500; }
+tbody tr:last-child td { border-bottom: 0; }
+td.mono, th.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* retrieval */
+.retrieval { margin-top: 80px; border-top: 3px double var(--rule); padding-top: 40px; }
+.retrieval h2 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 2rem;
+  margin: 0 0 10px;
+  letter-spacing: -0.015em;
+}
+.retrieval > p { max-width: var(--col); color: var(--muted); margin: 0 0 26px; }
+details {
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  margin-bottom: 10px;
+}
+details[open] { background: var(--surface-2); }
+summary {
+  cursor: pointer;
+  padding: 14px 18px;
+  font-weight: 500;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  align-items: baseline;
+}
+summary::-webkit-details-marker { display: none; }
+summary::before {
+  content: "Q" counter(qc);
+  counter-increment: qc;
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  color: var(--signal);
+  font-weight: 600;
+}
+.qlist { counter-reset: qc; }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details .ans {
+  padding: 0 18px 16px 58px;
+  font-size: 15.5px;
+  color: var(--muted);
+  max-width: 70ch;
+}
+details .ans strong { color: var(--ink); }
+
+/* schedule */
+.sched { margin-top: 64px; border-top: 1px solid var(--rule); padding-top: 32px; }
+.sched h2 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 1.7rem;
+  margin: 0 0 8px;
+}
+.sched > p { max-width: var(--col); color: var(--muted); margin: 0 0 22px; }
+
+footer {
+  margin-top: 72px;
+  padding-top: 22px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="eyebrow">
+    <span>AI Engineer Track</span><span class="sep">/</span>
+    <span>LLM Literacy</span><span class="sep">/</span>
+    <span>LLM 101</span><span class="sep">/</span>
+    <span>&sect;1 Conceptual Layer</span>
+  </div>
+  <h1>Next-Token Field Notes</h1>
+  <p class="standfirst">Six ideas that turn a large language model from magic into machinery &mdash; each one written out in prose, then drawn as the mechanism it actually is.</p>
+  <div class="meta-strip">
+    <div><span class="meta-k">Items</span><span class="meta-v">6</span></div>
+    <div><span class="meta-k">Budgeted</span><span class="meta-v">5.25 hrs</span></div>
+    <div><span class="meta-k">Target</span><span class="meta-v">2026-09-08</span></div>
+    <div><span class="meta-k">Next up</span><span class="meta-v">&sect;2 Transformer</span></div>
+  </div>
+</header>
+
+<div class="howto">
+  <h2>How to use these notes</h2>
+  <p>These are deliberately <em>not</em> written to be re-read. Dunlosky et al. (2013) rate re-reading and highlighting as <strong>low utility</strong> &mdash; they produce fluency, which your brain misreads as understanding. Retrieval practice and spacing are the only two techniques that scored <strong>high utility</strong>.</p>
+  <p>So: read a section once, cover it, and answer that section's question in the retrieval bank at the bottom from memory. Then check. The gap between what you can <em>produce</em> and what you <em>recognise</em> is the only honest measure of what stuck.</p>
+  <p>Each concept is given twice on purpose &mdash; once in prose, once as a diagram. If the prose slides off, look at the picture; if the picture is opaque, the paragraph above it says the same thing in words. Use whichever lane lands, then come back for the other one.</p>
+</div>
+
+<!-- ========================= 1 ========================= -->
+<section class="topic" id="s1">
+  <div class="topic-head">
+    <div class="num">01</div>
+    <h2 class="topic-title">What &ldquo;language modeling&rdquo; actually means</h2>
+    <div class="roadmap-tag">Roadmap item &middot; 1.0 hr &middot; done</div>
+  </div>
+  <div class="body">
+
+    <p class="lede">A language model is a probability distribution over sequences of text. That is the entire definition. Everything else &mdash; transformers, GPUs, RLHF &mdash; is engineering in service of that one job.</p>
+
+    <p>Hand it any string and it returns how likely that string is. <code>"The cat sat on the mat"</code> scores high. <code>"The cat sat on the thermodynamics"</code> scores low. Nothing more mystical is being claimed.</p>
+
+    <p>Then comes the move that makes it tractable. Modeling the probability of a whole document directly is hopeless, so you factor it with the chain rule of probability:</p>
+
+    <div class="formula">P(w₁ w₂ w₃ … wₙ) = P(w₁) · P(w₂|w₁) · P(w₃|w₁w₂) · … · P(wₙ|w₁…wₙ₋₁)</div>
+
+    <p>Read the right-hand side closely. Every term is the same question asked over and over: <strong>given everything so far, what comes next?</strong> That collapse &mdash; from &ldquo;model all of language&rdquo; down to &ldquo;be good at one conditional&rdquo; &mdash; is the founding trick of the entire field.</p>
+  </div>
+
+  <figure>
+    <div class="svg-hold">
+    <svg viewBox="0 0 760 212" role="img" aria-label="Six token boxes in a row; arcs run from the first three tokens into the fourth, showing that each token's probability is conditioned on every token to its left, and the whole sequence probability is the product of those conditionals.">
+      <text x="380" y="20" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" letter-spacing="1.4" fill="currentColor" opacity="0.55">EACH TOKEN CONDITIONS ON EVERYTHING TO ITS LEFT</text>
+
+      <path d="M 100 74 Q 268 8 436 74" fill="none" stroke="currentColor" stroke-width="1" opacity="0.45"/>
+      <path d="M 212 74 Q 324 26 436 74" fill="none" stroke="currentColor" stroke-width="1" opacity="0.45"/>
+      <path d="M 324 74 Q 380 44 436 74" fill="none" stroke="currentColor" stroke-width="1" opacity="0.45"/>
+
+      <rect x="48"  y="74" width="104" height="44" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+      <rect x="160" y="74" width="104" height="44" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+      <rect x="272" y="74" width="104" height="44" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+      <rect x="384" y="74" width="104" height="44" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.8"/>
+      <rect x="496" y="74" width="104" height="44" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.35"/>
+      <rect x="608" y="74" width="104" height="44" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.35"/>
+
+      <text x="100" y="102" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="14" fill="currentColor">The</text>
+      <text x="212" y="102" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="14" fill="currentColor">cat</text>
+      <text x="324" y="102" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="14" fill="currentColor">sat</text>
+      <text x="436" y="102" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="14" font-weight="600" fill="var(--signal)">on</text>
+      <text x="548" y="102" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="14" fill="currentColor" opacity="0.45">the</text>
+      <text x="660" y="102" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="14" fill="currentColor" opacity="0.45">mat</text>
+
+      <text x="436" y="142" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="13" fill="var(--signal)">P(w₄ | w₁ w₂ w₃)</text>
+
+      <line x1="48" y1="164" x2="712" y2="164" stroke="currentColor" stroke-width="1" opacity="0.2"/>
+      <text x="380" y="192" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="14" fill="currentColor">P(sequence) = ∏ᵢ P(wᵢ | w₁ … wᵢ₋₁)</text>
+    </svg>
+    </div>
+    <figcaption>The chain rule turns one impossible problem (score a whole document) into one repeated easy problem (score the next token). Every arc is a dependency the model must actually learn; a fixed-window n-gram model keeps only the nearest two or three of them, which is exactly why it plateaued.</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>The lineage follows that one objective forward: <strong>n-gram models</strong> (count occurrences, assume only the last few words matter) &rarr; <strong>neural LMs</strong> (learn a smooth function instead of counting) &rarr; <strong>transformers</strong> (condition on thousands of tokens at once). The objective never changed. Only the ability to condition on long context did.</p>
+
+    <div class="bust">
+      <span class="tag">Misconception to kill now</span>
+      <p><em>&ldquo;The model stores facts and looks them up.&rdquo;</em></p>
+      <p>There is no lookup table. There are ~10¹¹ floating-point numbers that shape a distribution. Facts fall out as a <em>side effect</em> of compressing a corpus well. This is why the model can be fluently, confidently wrong: it isn't retrieving a bad record, it's sampling from a distribution that was never a database in the first place.</p>
+    </div>
+
+    <div class="takeaway">
+      <span class="tag">Engineer's takeaway</span>
+      <p>Because the output is a distribution, hallucination is not a failure mode bolted onto the system. It is the system running exactly as designed. Every mitigation you'll build later &mdash; RAG, grounding, structured output, evals &mdash; is a way of constraining a probabilistic process, never of making it deterministic.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 2 ========================= -->
+<section class="topic" id="s2">
+  <div class="topic-head">
+    <div class="num">02</div>
+    <h2 class="topic-title">Next-token prediction intuition</h2>
+    <div class="roadmap-tag">Roadmap item &middot; 1.0 hr &middot; done</div>
+  </div>
+  <div class="body">
+
+    <p class="lede">The label is the next token in the text itself. Nobody annotated anything &mdash; and that is the whole reason this scaled when supervised learning couldn't.</p>
+
+    <p>The training loop, concretely:</p>
+    <ol>
+      <li>Take a document. Chop it into tokens.</li>
+      <li>At every position <em>i</em>, predict token <em>i</em> from tokens <code>1…i-1</code>.</li>
+      <li>Score against the actual token. Loss = <code>-log P(correct token)</code>. Confident and right &rarr; near-zero loss. Confident and wrong &rarr; enormous loss.</li>
+      <li>Backpropagate. Nudge the parameters. Repeat on the order of 10¹³ times.</li>
+    </ol>
+
+    <p>That is what <strong>self-supervised</strong> means: the internet was already a labeled dataset, we just hadn't noticed. And notice what the loss punishes hardest &mdash; not being wrong, but being <em>confidently</em> wrong. Calibration is trained in from the first step.</p>
+
+    <p>Now the asymmetry that trips up almost everyone, because it drives most of your future infrastructure bill:</p>
+  </div>
+
+  <figure>
+    <div class="svg-hold">
+    <svg viewBox="0 0 760 236" role="img" aria-label="Left panel: training runs one forward pass over five tokens at once, producing five losses in parallel. Right panel: inference grows the sequence one token at a time, each new token fed back as input, requiring one forward pass per token.">
+      <rect x="16" y="12" width="348" height="210" fill="none" stroke="currentColor" stroke-width="1" opacity="0.25"/>
+      <rect x="396" y="12" width="348" height="210" fill="none" stroke="currentColor" stroke-width="1" opacity="0.25"/>
+
+      <text x="190" y="38" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" letter-spacing="1.5" font-weight="600" fill="var(--accent)">TRAINING</text>
+      <text x="190" y="56" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="currentColor" opacity="0.55">teacher forcing · parallel</text>
+
+      <text x="570" y="38" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" letter-spacing="1.5" font-weight="600" fill="var(--signal)">INFERENCE</text>
+      <text x="570" y="56" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="currentColor" opacity="0.55">autoregressive · serial</text>
+
+      <!-- LEFT: parallel -->
+      <g stroke="currentColor" stroke-width="1.1" opacity="0.55">
+        <line x1="82"  y1="146" x2="82"  y2="126"/>
+        <line x1="138" y1="146" x2="138" y2="126"/>
+        <line x1="194" y1="146" x2="194" y2="126"/>
+        <line x1="250" y1="146" x2="250" y2="126"/>
+        <line x1="306" y1="146" x2="306" y2="126"/>
+      </g>
+      <rect x="58" y="96" width="272" height="30" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="194" y="116" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--accent)">one forward pass</text>
+      <g stroke="var(--accent)" stroke-width="1.4">
+        <line x1="82"  y1="96" x2="82"  y2="80"/>
+        <line x1="138" y1="96" x2="138" y2="80"/>
+        <line x1="194" y1="96" x2="194" y2="80"/>
+        <line x1="250" y1="96" x2="250" y2="80"/>
+        <line x1="306" y1="96" x2="306" y2="80"/>
+      </g>
+      <g fill="var(--accent)">
+        <circle cx="82"  cy="76" r="3.5"/><circle cx="138" cy="76" r="3.5"/>
+        <circle cx="194" cy="76" r="3.5"/><circle cx="250" cy="76" r="3.5"/>
+        <circle cx="306" cy="76" r="3.5"/>
+      </g>
+
+      <g fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7">
+        <rect x="58"  y="146" width="48" height="28"/>
+        <rect x="114" y="146" width="48" height="28"/>
+        <rect x="170" y="146" width="48" height="28"/>
+        <rect x="226" y="146" width="48" height="28"/>
+        <rect x="282" y="146" width="48" height="28"/>
+      </g>
+      <text x="194" y="200" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">5 losses · 1 pass</text>
+
+      <!-- RIGHT: serial -->
+      <g fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.65">
+        <rect x="430" y="76"  width="28" height="26"/><rect x="464" y="76"  width="28" height="26"/>
+        <rect x="430" y="116" width="28" height="26"/><rect x="464" y="116" width="28" height="26"/><rect x="498" y="116" width="28" height="26"/>
+        <rect x="430" y="156" width="28" height="26"/><rect x="464" y="156" width="28" height="26"/><rect x="498" y="156" width="28" height="26"/><rect x="532" y="156" width="28" height="26"/>
+      </g>
+      <rect x="498" y="76"  width="28" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.6"/>
+      <rect x="532" y="116" width="28" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.6"/>
+      <rect x="566" y="156" width="28" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.6"/>
+
+      <path d="M 526 89 C 604 89 604 129 566 129" fill="none" stroke="var(--signal)" stroke-width="1.3" marker-end="url(#ar1)"/>
+      <path d="M 560 129 C 638 129 638 169 600 169" fill="none" stroke="var(--signal)" stroke-width="1.3" marker-end="url(#ar1)"/>
+      <defs>
+        <marker id="ar1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--signal)"/>
+        </marker>
+      </defs>
+      <text x="672" y="126" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">output</text>
+      <text x="672" y="140" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">→ input</text>
+
+      <text x="570" y="200" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">1 token · 1 pass · repeat</text>
+    </svg>
+    </div>
+    <figcaption>Same weights, two completely different execution shapes. Training saturates a GPU because every position is scored at once; generation is memory-bandwidth-bound because the sequence has to physically grow before the next pass can run. This single asymmetry is why the KV cache, batching and speculative decoding all exist &mdash; and why your latency is roughly <span class="mono">output_tokens &times; time_per_token</span>, not input size.</figcaption>
+  </figure>
+
+  <div class="body">
+    <div class="bust">
+      <span class="tag">Predict before you read on</span>
+      <p>The model is generating a sentence. Does it decide the ending before writing the beginning?</p>
+      <p><strong>No.</strong> There is zero lookahead. <code>"The capital of France is"</code> produces a distribution over ~100k tokens where <code>" Paris"</code> might hold 0.92 of the mass. One token is sampled, appended, and the model runs again on the longer string. It never plans and it can never retract.</p>
+    </div>
+
+    <p>The analogy worth keeping: an improv performer who must speak one word at a time, is forbidden from taking anything back, but has read everything ever written. Coherence is not planned &mdash; it emerges because the <em>entire</em> prefix conditions every single next choice.</p>
+  </div>
+</section>
+
+<!-- ========================= 3 ========================= -->
+<section class="topic" id="s3">
+  <div class="topic-head">
+    <div class="num">03</div>
+    <h2 class="topic-title">Why next-token prediction produces reasoning-like behavior</h2>
+    <div class="roadmap-tag">Roadmap item &middot; 1.0 hr &middot; not started</div>
+  </div>
+  <div class="body">
+
+    <p class="lede">The training corpus is far larger than the parameter count. Memorisation is physically unavailable. So gradient descent is <em>forced</em> to compress &mdash; and the cheapest compression of text-about-the-world turns out to be a model of the world.</p>
+
+    <p>This is the conceptual jump of the whole section. Four arguments, stacked.</p>
+
+    <p><strong>(a) The compression argument</strong> &mdash; the load-bearing one. To predict the last page of a murder mystery you must model motive, alibi and narrative structure. To predict the token after <code>"2 + 2 ="</code>, learning addition costs fewer parameters than memorising every integer pair. Reasoning is <em>instrumentally useful</em> for prediction, so prediction pressure manufactures it.</p>
+
+    <p><strong>(b) Text is the fossil record of human reasoning.</strong> People wrote their reasoning chains down &mdash; proofs, debugging logs, legal arguments, code reviews. Predicting those tokens well requires reproducing the process that generated them.</p>
+
+    <p><strong>(c) Prediction is a universal task.</strong> Translation is &ldquo;complete <code>English: … French:</code>&rdquo;. Summarisation, classification, code generation &mdash; all expressible as text completion. One loss function is quietly optimising across every task at once.</p>
+
+    <p><strong>(d) Chain-of-thought is mechanical, not magical.</strong> A single forward pass has fixed compute. When the model writes intermediate steps, each generated token feeds back as input &mdash; converting a one-pass problem into an N-pass problem. It is literally buying more compute per question, using its own output as external working memory.</p>
+  </div>
+
+  <figure>
+    <div class="svg-hold">
+    <svg viewBox="0 0 740 226" role="img" aria-label="Top row: a question goes through one forward pass straight to an answer, with one unit of compute. Bottom row: the same question passes through four forward passes, each writing an intermediate step that is fed back as input, accumulating four units of compute before the answer.">
+      <text x="16" y="24" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.3" fill="currentColor" opacity="0.55">DIRECT ANSWER</text>
+
+      <rect x="16" y="38" width="92" height="34" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+      <text x="62" y="60" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">question</text>
+      <line x1="108" y1="55" x2="146" y2="55" stroke="currentColor" stroke-width="1.2" opacity="0.6" marker-end="url(#ar2)"/>
+      <rect x="150" y="38" width="86" height="34" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="1.3"/>
+      <text x="193" y="60" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--accent)">pass 1</text>
+      <line x1="236" y1="55" x2="274" y2="55" stroke="currentColor" stroke-width="1.2" opacity="0.6" marker-end="url(#ar2)"/>
+      <rect x="278" y="38" width="86" height="34" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+      <text x="321" y="60" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">answer</text>
+      <text x="400" y="60" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor" opacity="0.7">compute available = 1 pass</text>
+
+      <defs>
+        <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--signal)"/>
+        </marker>
+      </defs>
+
+      <line x1="16" y1="96" x2="724" y2="96" stroke="currentColor" stroke-width="1" opacity="0.18"/>
+
+      <text x="16" y="124" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.3" fill="var(--signal)">WITH A SCRATCHPAD</text>
+
+      <rect x="16" y="138" width="92" height="34" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+      <text x="62" y="160" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">question</text>
+
+      <g>
+        <line x1="108" y1="155" x2="132" y2="155" stroke="var(--signal)" stroke-width="1.2" marker-end="url(#ar3)"/>
+        <rect x="136" y="138" width="70" height="34" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.3"/>
+        <text x="171" y="160" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--signal)">pass 1</text>
+
+        <line x1="206" y1="155" x2="230" y2="155" stroke="var(--signal)" stroke-width="1.2" marker-end="url(#ar3)"/>
+        <rect x="234" y="138" width="70" height="34" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.3"/>
+        <text x="269" y="160" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--signal)">pass 2</text>
+
+        <line x1="304" y1="155" x2="328" y2="155" stroke="var(--signal)" stroke-width="1.2" marker-end="url(#ar3)"/>
+        <rect x="332" y="138" width="70" height="34" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.3"/>
+        <text x="367" y="160" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--signal)">pass 3</text>
+
+        <line x1="402" y1="155" x2="426" y2="155" stroke="var(--signal)" stroke-width="1.2" marker-end="url(#ar3)"/>
+        <rect x="430" y="138" width="70" height="34" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.3"/>
+        <text x="465" y="160" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--signal)">pass 4</text>
+
+        <line x1="500" y1="155" x2="524" y2="155" stroke="currentColor" stroke-width="1.2" opacity="0.6" marker-end="url(#ar2)"/>
+        <rect x="528" y="138" width="86" height="34" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+        <text x="571" y="160" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">answer</text>
+      </g>
+
+      <text x="171" y="192" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.6">&ldquo;12 × 7&rdquo;</text>
+      <text x="269" y="192" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.6">&ldquo;= 70 + 14&rdquo;</text>
+      <text x="367" y="192" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.6">&ldquo;= 84&rdquo;</text>
+      <text x="465" y="192" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.6">&ldquo;so&rdquo;</text>
+
+      <text x="16" y="216" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--signal)">compute available = 4 passes · each written token is fed back as input</text>
+    </svg>
+    </div>
+    <figcaption>The difference isn't that the model &ldquo;tries harder&rdquo; when told to think step by step. Writing intermediate tokens is the only way it can spend more than one forward pass on a problem, because its own output is the only thing it can add to its own input. That is also why the reasoning has to be <em>visible</em> to work at all &mdash; there is no hidden place to put it.</figcaption>
+  </figure>
+
+  <div class="body">
+    <div class="bust">
+      <span class="tag">Misconception &mdash; both directions</span>
+      <p><em>&ldquo;It's just autocomplete&rdquo;</em> and <em>&ldquo;it genuinely thinks&rdquo;</em> are wrong in the same way: both confuse the training objective with the learned solution.</p>
+      <p>Evolution optimises exactly one thing &mdash; reproductive fitness. It produced eyes, birdsong, and parental love. Simple objective, rich instrumental machinery. Next-token prediction is the objective. What got built to satisfy it is a separate question, and the honest answer is: functions that behave like reasoning on distributions resembling training data, and grow brittle off-distribution.</p>
+    </div>
+
+    <div class="takeaway">
+      <span class="tag">Engineer's takeaway</span>
+      <p>If a task needs multiple steps of computation, give the model room to write them down. Squeezing a hard problem into a terse one-line answer is not efficiency &mdash; you are capping how much compute it is allowed to spend.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 4 ========================= -->
+<section class="topic" id="s4">
+  <div class="topic-head">
+    <div class="num">04</div>
+    <h2 class="topic-title">Emergence &amp; scaling laws</h2>
+    <div class="roadmap-tag">Roadmap item &middot; 1.0 hr &middot; not started</div>
+  </div>
+  <div class="body">
+
+    <p class="lede">Loss is predictable. Capability is not. Nearly every practical mistake in this area comes from assuming the second follows from the first.</p>
+
+    <p><strong>Scaling laws</strong> (Kaplan et al., 2020; Hoffmann et al., 2022): test loss falls as a <em>power law</em> in parameters&nbsp;(N), data&nbsp;(D) and compute&nbsp;(C). Plot it on log-log axes and you get a straight line, holding for many orders of magnitude.</p>
+
+    <p>The consequence is remarkable: you can train a family of small models, fit the line, and <strong>forecast the loss of a model you have not trained</strong>. That predictability is the only reason a lab will commit nine figures to a single training run.</p>
+
+    <p><strong>Chinchilla</strong> is the result worth memorising. For a fixed compute budget there is an optimal split between model size and data &mdash; roughly <strong>20 tokens per parameter</strong>. Before this, models were badly undertrained: GPT-3 was 175B parameters on ~300B tokens. Chinchilla at 70B beat Gopher at 280B purely by rebalancing toward data.</p>
+
+    <p>The modern twist matters for your job. Chinchilla optimises <em>training</em> cost. In production you pay <em>inference</em> cost forever. So labs now deliberately train far past the compute-optimal point &mdash; overtraining a small model to get one that is cheap to serve. That is the entire reason a genuinely strong 8B model exists.</p>
+  </div>
+
+  <figure>
+    <div class="svg-hold">
+    <svg viewBox="0 0 740 264" role="img" aria-label="Left plot: test loss against compute on log-log axes falls along a straight line, labelled predictable. Right plot: the same underlying model measured two ways — exact-match accuracy jumps as a step function while per-token log-probability rises smoothly, showing that apparent emergence can be an artifact of the metric.">
+      <!-- LEFT PLOT -->
+      <text x="26" y="24" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.3" fill="var(--accent)">SCALING LAW · log–log</text>
+      <line x1="52" y1="52" x2="52" y2="196" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
+      <line x1="52" y1="196" x2="330" y2="196" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
+      <g stroke="currentColor" stroke-width="0.7" opacity="0.16">
+        <line x1="52" y1="160" x2="330" y2="160"/><line x1="52" y1="124" x2="330" y2="124"/><line x1="52" y1="88" x2="330" y2="88"/>
+        <line x1="122" y1="52" x2="122" y2="196"/><line x1="192" y1="52" x2="192" y2="196"/><line x1="262" y1="52" x2="262" y2="196"/>
+      </g>
+      <line x1="66" y1="72" x2="318" y2="176" stroke="var(--accent)" stroke-width="2.2"/>
+      <g fill="var(--accent)">
+        <circle cx="66" cy="72" r="4"/><circle cx="129" cy="98" r="4"/><circle cx="192" cy="124" r="4"/><circle cx="255" cy="150" r="4"/><circle cx="318" cy="176" r="4"/>
+      </g>
+      <text x="191" y="222" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor" opacity="0.7">compute (log)</text>
+      <text x="34" y="128" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor" opacity="0.7" transform="rotate(-90 34 128)">test loss (log)</text>
+      <text x="191" y="248" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--accent)">you can extrapolate this</text>
+
+      <line x1="378" y1="30" x2="378" y2="240" stroke="currentColor" stroke-width="1" opacity="0.18"/>
+
+      <!-- RIGHT PLOT -->
+      <text x="418" y="24" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.3" fill="var(--signal)">SAME MODEL · TWO METRICS</text>
+      <line x1="444" y1="52" x2="444" y2="196" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
+      <line x1="444" y1="196" x2="712" y2="196" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
+      <g stroke="currentColor" stroke-width="0.7" opacity="0.16">
+        <line x1="444" y1="160" x2="712" y2="160"/><line x1="444" y1="124" x2="712" y2="124"/><line x1="444" y1="88" x2="712" y2="88"/>
+      </g>
+      <path d="M 452 190 C 520 186 570 172 610 140 C 646 112 676 82 704 66" fill="none" stroke="var(--accent)" stroke-width="2.2"/>
+      <polyline points="452,192 596,192 596,80 704,72" fill="none" stroke="var(--signal)" stroke-width="2.2"/>
+      <line x1="596" y1="52" x2="596" y2="196" stroke="var(--signal)" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>
+      <text x="596" y="44" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">&ldquo;emergence&rdquo;</text>
+      <line x1="454" y1="108" x2="480" y2="108" stroke="var(--accent)" stroke-width="2.2"/>
+      <text x="486" y="112" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--accent)">log-prob smooth</text>
+      <line x1="454" y1="128" x2="480" y2="128" stroke="var(--signal)" stroke-width="2.2"/>
+      <text x="486" y="132" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">exact match step</text>
+      <text x="578" y="222" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor" opacity="0.7">model scale →</text>
+      <text x="578" y="248" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--signal)">you cannot extrapolate this</text>
+    </svg>
+    </div>
+    <figcaption>Left: loss versus compute is a straight line you can forecast. Right: the same improving model looks like a cliff or a ramp depending purely on how you measure it. Exact-match accuracy on five-digit addition scores zero until every digit is right &mdash; it is a step function <em>by construction</em>. Swap to per-token log-probability and the curve is smooth the whole way.</figcaption>
+  </figure>
+
+  <div class="body">
+    <div class="bust">
+      <span class="tag">The nuance most roadmaps skip</span>
+      <p>Schaeffer et al. (2023), <em>&ldquo;Are Emergent Abilities of Large Language Models a Mirage?&rdquo;</em> &mdash; much of the apparent discontinuity is an artifact of the <strong>metric</strong>, not a phase change in the model.</p>
+      <p>The takeaway isn't &ldquo;emergence is fake.&rdquo; It's sharper and far more useful: the underlying capability improves smoothly and predictably, while <em>your measurement of it</em> can be a step function. Which means a benchmark that reads 0% today can read 60% at the next scale-up with nothing surprising having happened inside the model.</p>
+    </div>
+
+    <p>Genuinely useful examples of scale-dependent behavior: multi-digit arithmetic, reliable instruction following, and benefiting from chain-of-thought at all &mdash; CoT actively <em>hurts</em> small models, which produce plausible-looking steps that don't constrain the answer.</p>
+
+    <div class="takeaway">
+      <span class="tag">Engineer's takeaway</span>
+      <p>Never extrapolate behavior &mdash; evaluate it. &ldquo;The next model will be like this one but 10% better&rdquo; is precisely the wrong mental model. Capabilities arrive in lumps, and so do regressions. Keep an eval suite that you can re-run the day a new model ships.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 5 ========================= -->
+<section class="topic" id="s5">
+  <div class="topic-head">
+    <div class="num">05</div>
+    <h2 class="topic-title">Foundation models vs task-specific models</h2>
+    <div class="roadmap-tag">Roadmap item &middot; 0.5 hr &middot; not started</div>
+  </div>
+  <div class="body">
+
+    <p class="lede">&ldquo;Foundation model&rdquo; describes breadth of pretraining and adaptability &mdash; not parameter count. A 3B model pretrained broadly is one. A 20B model trained on protein sequences for a single task is not.</p>
+
+    <p><strong>The old paradigm:</strong> one model per task. A sentiment classifier, an NER tagger, a translator. Each needs its own labeled dataset, training run, deployment and monitoring. Each shatters on domain shift.</p>
+
+    <p><strong>The new paradigm:</strong> one heavily pretrained model, many tasks, adapted cheaply.</p>
+
+    <p>The term comes from Stanford CRFM (Bommasani et al., 2021). Three defining properties: trained on <em>broad</em> data, at <em>scale</em>, via <em>self-supervision</em> &mdash; and <em>adaptable</em> downstream. The metaphor was chosen carefully: it is a base others build on, <em>and its cracks propagate into every building above it</em>. Homogenisation is simultaneously the value proposition and the systemic risk. When one model underpins ten thousand products, its blind spots become everyone's blind spots at once.</p>
+  </div>
+
+  <figure>
+    <div class="svg-hold">
+    <svg viewBox="0 0 740 268" role="img" aria-label="A staircase of six adaptation methods rising left to right: prompting, few-shot, RAG, LoRA or PEFT, full fine-tune, and continued pretraining. Cost, data required and commitment all increase to the right. An annotation marks the point where you stop owning only a prompt and start owning model weights.">
+      <text x="16" y="24" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.3" fill="currentColor" opacity="0.55">THE ADAPTATION LADDER · climb only as far as the problem forces you</text>
+
+      <g stroke="currentColor" stroke-width="0.7" opacity="0.14">
+        <line x1="16" y1="70" x2="724" y2="70"/><line x1="16" y1="110" x2="724" y2="110"/><line x1="16" y1="150" x2="724" y2="150"/><line x1="16" y1="190" x2="724" y2="190"/>
+      </g>
+
+      <rect x="20"  y="186" width="108" height="30" fill="var(--accent-dim)"  stroke="var(--accent)" stroke-width="1.3"/>
+      <rect x="136" y="170" width="108" height="46" fill="var(--accent-dim)"  stroke="var(--accent)" stroke-width="1.3"/>
+      <rect x="252" y="148" width="108" height="68" fill="var(--accent-dim)"  stroke="var(--accent)" stroke-width="1.3"/>
+      <rect x="368" y="120" width="108" height="96" fill="var(--signal-dim)"  stroke="var(--signal)" stroke-width="1.3"/>
+      <rect x="484" y="86"  width="108" height="130" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.3"/>
+      <rect x="600" y="52"  width="108" height="164" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.3"/>
+
+      <text x="74"  y="180" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">prompting</text>
+      <text x="190" y="164" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">few-shot</text>
+      <text x="306" y="142" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">RAG</text>
+      <text x="422" y="114" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">LoRA / PEFT</text>
+      <text x="538" y="80"  text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">full fine-tune</text>
+      <text x="654" y="46"  text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">continued pretrain</text>
+
+      <text x="74"  y="206" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.65">minutes</text>
+      <text x="190" y="206" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.65">a few examples</text>
+      <text x="306" y="206" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.65">your documents</text>
+      <text x="422" y="206" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.65">10²–10³ examples</text>
+      <text x="538" y="206" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.65">10³+ examples</text>
+      <text x="654" y="206" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.65">10⁹+ tokens</text>
+
+      <line x1="364" y1="40" x2="364" y2="222" stroke="var(--signal)" stroke-width="1.2" stroke-dasharray="4 4"/>
+      <text x="360" y="36" text-anchor="end" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">you own a prompt ←</text>
+      <text x="370" y="36" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">→ you own weights</text>
+
+      <line x1="20" y1="240" x2="700" y2="240" stroke="currentColor" stroke-width="1.2" opacity="0.6" marker-end="url(#ar4)"/>
+      <defs>
+        <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <text x="20" y="260" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor" opacity="0.7">cost · data required · commitment · time-to-change-your-mind</text>
+    </svg>
+    </div>
+    <figcaption>The dashed line is the decision that actually matters. To its left you are renting behavior and can change it in an afternoon; to its right you own a set of weights, plus the retraining, versioning and evaluation burden that comes with them. Most teams jump to fine-tuning when better prompting or retrieval would have solved the problem &mdash; and then discover they've bought a maintenance obligation.</figcaption>
+  </figure>
+
+  <div class="body">
+    <p><strong>When task-specific still wins</strong> &mdash; and it genuinely does: narrow scope, plentiful labels, and a hard latency or cost ceiling. A distilled 100M-parameter spam classifier answering in 3ms beats a frontier model at 800ms and several hundred times the cost, and it will never be prompt-injected. The mature pattern is to <em>use the foundation model to find product-market fit, then distil the hot path</em>.</p>
+
+    <div class="bust">
+      <span class="tag">Misconception</span>
+      <p><em>&ldquo;Foundation model just means big model.&rdquo;</em> Size is a consequence, not the definition. What makes something a foundation model is that it was pretrained broadly enough to be pointed at tasks nobody had in mind when it was trained.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 6 ========================= -->
+<section class="topic" id="s6">
+  <div class="topic-head">
+    <div class="num">06</div>
+    <h2 class="topic-title">Generative vs representation models</h2>
+    <div class="roadmap-tag">Roadmap item &middot; 0.75 hr &middot; not started</div>
+  </div>
+  <div class="body">
+
+    <p class="lede">One asks &ldquo;what comes next?&rdquo; and returns tokens. The other asks &ldquo;what does this mean?&rdquo; and returns a vector. Every real RAG system runs both, and confusing them is the most common beginner architecture error.</p>
+
+    <div class="tbl-hold">
+    <table>
+      <thead>
+        <tr><th>&nbsp;</th><th>Generative</th><th>Representation</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Output</td><td>a sequence of tokens</td><td>one fixed-length vector</td></tr>
+        <tr><td>Architecture</td><td>decoder-only</td><td>encoder-only</td></tr>
+        <tr><td>Attention mask</td><td><strong>causal</strong> &mdash; see left only</td><td><strong>bidirectional</strong> &mdash; see everything</td></tr>
+        <tr><td>Objective</td><td>next-token prediction</td><td>masked-token / <strong>contrastive</strong></td></tr>
+        <tr><td>Examples</td><td class="mono">GPT · Claude · Llama · Mistral</td><td class="mono">BERT · text-embedding-3 · e5 · bge</td></tr>
+        <tr><td>Cost profile</td><td>expensive, streamed, serial</td><td>cheap, batchable, cacheable</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>The mechanical difference is close to a single line of code: <strong>the attention mask</strong>. Apply a causal mask so each token attends only to its left, and you have a generative model. Remove it so every token attends to the whole sequence, and you have a representation model. That plus the training objective is essentially the whole split.</p>
+  </div>
+
+  <figure>
+    <div class="svg-hold">
+    <svg viewBox="0 0 740 268" role="img" aria-label="Two six-by-six attention grids. The causal mask on the left fills only the lower triangle, so each query position attends to itself and earlier positions. The bidirectional mask on the right is fully filled, so every position attends to every other position including later ones.">
+      <text x="30" y="24" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.3" fill="var(--signal)">CAUSAL · decoder · generative</text>
+      <text x="420" y="24" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.3" fill="var(--accent)">BIDIRECTIONAL · encoder · representation</text>
+
+      <!-- causal grid: rows = query i, cols = key j, filled when j <= i -->
+      <g>
+        <rect x="60" y="48" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/>
+        <rect x="60" y="74" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="86" y="74" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/>
+        <rect x="60" y="100" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="86" y="100" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="112" y="100" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/>
+        <rect x="60" y="126" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="86" y="126" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="112" y="126" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="138" y="126" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/>
+        <rect x="60" y="152" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="86" y="152" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="112" y="152" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="138" y="152" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="164" y="152" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/>
+        <rect x="60" y="178" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="86" y="178" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="112" y="178" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="138" y="178" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="164" y="178" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/><rect x="190" y="178" width="26" height="26" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1"/>
+      </g>
+      <g fill="none" stroke="currentColor" stroke-width="0.7" opacity="0.22">
+        <rect x="60" y="48" width="156" height="156"/>
+        <line x1="86" y1="48" x2="86" y2="204"/><line x1="112" y1="48" x2="112" y2="204"/><line x1="138" y1="48" x2="138" y2="204"/><line x1="164" y1="48" x2="164" y2="204"/><line x1="190" y1="48" x2="190" y2="204"/>
+        <line x1="60" y1="74" x2="216" y2="74"/><line x1="60" y1="100" x2="216" y2="100"/><line x1="60" y1="126" x2="216" y2="126"/><line x1="60" y1="152" x2="216" y2="152"/><line x1="60" y1="178" x2="216" y2="178"/>
+      </g>
+      <text x="138" y="222" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.6">key position →</text>
+      <text x="44" y="126" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.6" transform="rotate(-90 44 126)">query ↓</text>
+      <text x="248" y="130" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--signal)">half the</text>
+      <text x="248" y="146" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--signal)">grid is blind</text>
+
+      <line x1="380" y1="30" x2="380" y2="240" stroke="currentColor" stroke-width="1" opacity="0.18"/>
+
+      <!-- bidirectional grid -->
+      <g>
+        <rect x="450" y="48" width="156" height="156" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="1.4"/>
+      </g>
+      <g fill="none" stroke="var(--accent)" stroke-width="0.8" opacity="0.5">
+        <line x1="476" y1="48" x2="476" y2="204"/><line x1="502" y1="48" x2="502" y2="204"/><line x1="528" y1="48" x2="528" y2="204"/><line x1="554" y1="48" x2="554" y2="204"/><line x1="580" y1="48" x2="580" y2="204"/>
+        <line x1="450" y1="74" x2="606" y2="74"/><line x1="450" y1="100" x2="606" y2="100"/><line x1="450" y1="126" x2="606" y2="126"/><line x1="450" y1="152" x2="606" y2="152"/><line x1="450" y1="178" x2="606" y2="178"/>
+      </g>
+      <text x="528" y="222" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.6">key position →</text>
+      <text x="434" y="126" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.6" transform="rotate(-90 434 126)">query ↓</text>
+      <text x="632" y="130" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--accent)">every token</text>
+      <text x="632" y="146" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--accent)">sees the rest</text>
+
+      <text x="30" y="256" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor" opacity="0.75">Same transformer block. The only change is which cells are allowed to be non-zero.</text>
+    </svg>
+    </div>
+    <figcaption>Why bidirectional matters for embeddings: to embed <span class="mono">"the bank was steep and muddy"</span> you need <span class="mono">bank</span> to see <span class="mono">steep</span>. A causal model, at the moment it processes <span class="mono">bank</span>, has not read <span class="mono">steep</span> yet &mdash; it is structurally blind to the evidence that disambiguates the word.</figcaption>
+  </figure>
+
+  <div class="body">
+    <p><strong>Contrastive training</strong> deserves its own name, because it is a genuinely different objective. You show the model pairs, pull semantically similar ones together in vector space, and push dissimilar ones apart. You are not predicting tokens at all &mdash; you are <em>sculpting a geometry</em> in which cosine distance means semantic distance.</p>
+  </div>
+
+  <figure>
+    <div class="svg-hold">
+    <svg viewBox="0 0 740 176" role="img" aria-label="A retrieval-augmented generation pipeline: a query goes to an embedding model producing a vector, which searches a vector index for the top-k chunks, which are placed in a prompt sent to a generative model that returns an answer. The embedding half is labelled cheap and cacheable, the generative half expensive and streamed.">
+      <text x="16" y="22" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.3" fill="currentColor" opacity="0.55">ONE RAG REQUEST · TWO DIFFERENT MODELS, TWO DIFFERENT BILLS</text>
+
+      <defs>
+        <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <rect x="16" y="52" width="76" height="38" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+      <text x="54" y="76" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">query</text>
+
+      <line x1="92" y1="71" x2="126" y2="71" stroke="currentColor" stroke-width="1.2" opacity="0.65" marker-end="url(#ar5)"/>
+
+      <rect x="130" y="52" width="126" height="38" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="193" y="76" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--accent)">embedding model</text>
+
+      <line x1="256" y1="71" x2="296" y2="71" stroke="currentColor" stroke-width="1.2" opacity="0.65" marker-end="url(#ar5)"/>
+      <text x="276" y="62" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10" fill="currentColor" opacity="0.6">vector</text>
+
+      <rect x="300" y="52" width="118" height="38" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+      <text x="359" y="76" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">vector index</text>
+
+      <line x1="418" y1="71" x2="462" y2="71" stroke="currentColor" stroke-width="1.2" opacity="0.65" marker-end="url(#ar5)"/>
+      <text x="440" y="62" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10" fill="currentColor" opacity="0.6">top-k</text>
+
+      <rect x="466" y="52" width="134" height="38" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.4"/>
+      <text x="533" y="76" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--signal)">generative model</text>
+
+      <line x1="600" y1="71" x2="638" y2="71" stroke="currentColor" stroke-width="1.2" opacity="0.65" marker-end="url(#ar5)"/>
+      <rect x="642" y="52" width="82" height="38" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+      <text x="683" y="76" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">answer</text>
+
+      <line x1="130" y1="112" x2="256" y2="112" stroke="var(--accent)" stroke-width="1.6"/>
+      <text x="193" y="132" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--accent)">cheap · batchable</text>
+      <text x="193" y="148" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--accent)">cacheable · ~ms</text>
+
+      <line x1="466" y1="112" x2="600" y2="112" stroke="var(--signal)" stroke-width="1.6"/>
+      <text x="533" y="132" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--signal)">expensive · serial</text>
+      <text x="533" y="148" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--signal)">streamed · ~100s of ms</text>
+    </svg>
+    </div>
+    <figcaption>Both halves are &ldquo;the AI&rdquo; to a user, but they scale, fail and cost in completely different ways. The embedding half is the one you can cache aggressively and re-run over your whole corpus overnight; the generative half is the one that shows up on the invoice.</figcaption>
+  </figure>
+
+  <div class="body">
+    <div class="bust">
+      <span class="tag">Misconception</span>
+      <p><em>&ldquo;I'll just grab the LLM's hidden states and use them as embeddings.&rdquo;</em></p>
+      <p>You can, and they will be mediocre. Causal masking gives you a half-blind representation, and nothing in next-token training optimised that vector space for cosine similarity. Purpose-built embedding models &mdash; often a hundred times smaller &mdash; beat frontier LLMs at retrieval.</p>
+    </div>
+
+    <p>Worth knowing about the third family: <strong>encoder-decoder</strong> (T5, BART). The encoder reads bidirectionally, the decoder generates causally, and cross-attention bridges them. Largely displaced by decoder-only for general-purpose LLMs, but still strong for fixed input&rarr;output transforms like translation. Your roadmap picks this up in &sect;2 under &ldquo;Encoder-only vs Decoder-only vs Encoder-Decoder.&rdquo;</p>
+  </div>
+</section>
+
+<!-- ========================= retrieval ========================= -->
+<section class="retrieval">
+  <h2>Retrieval bank</h2>
+  <p>Cover the notes. Write each answer out before you open it &mdash; retrieval that you don't check can reinforce errors, and retrieval that feels easy isn't doing anything.</p>
+  <div class="qlist">
+
+    <details>
+      <summary>State what a language model is in one sentence, without using the word &ldquo;predict.&rdquo;</summary>
+      <div class="ans">A <strong>probability distribution over sequences of text</strong>. Given any string, it returns how likely that string is. The chain rule then turns that into a repeated conditional, which is where prediction enters &mdash; but the distribution is the definition.</div>
+    </details>
+
+    <details>
+      <summary>Why does the chain rule make language modeling tractable?</summary>
+      <div class="ans">It factors the joint probability of an entire sequence into a product of one-step conditionals, each of the form <span class="mono">P(wᵢ | w₁…wᵢ₋₁)</span>. One impossible problem becomes <strong>one easy problem repeated</strong> &mdash; and it's the same problem every time, so a single learned function covers all of it.</div>
+    </details>
+
+    <details>
+      <summary>What does the loss function punish hardest, and why does that matter?</summary>
+      <div class="ans"><span class="mono">-log P(correct token)</span> explodes when the model is <strong>confident and wrong</strong>, not merely wrong. Calibration is trained in from step one &mdash; which is also why log-probabilities are a meaningful confidence signal at inference time, unlike a model just saying &ldquo;I'm sure.&rdquo;</div>
+    </details>
+
+    <details>
+      <summary>Give the compression argument for why next-token prediction yields reasoning.</summary>
+      <div class="ans">The corpus is far bigger than the parameter count, so memorisation is <strong>physically unavailable</strong>. Gradient descent must compress, and the cheapest compression of text-about-the-world is a model of the world. Learning addition is cheaper than storing every integer pair; modelling motive is cheaper than storing every mystery novel.</div>
+    </details>
+
+    <details>
+      <summary>Mechanically &mdash; not motivationally &mdash; why does chain-of-thought improve answers?</summary>
+      <div class="ans">A forward pass has fixed compute. The model's own output is the only thing it can add to its own input, so <strong>writing intermediate tokens is the only way to spend more than one pass on a problem</strong>. N written steps buys N passes. That's also why the reasoning has to be visible: there is no hidden scratchpad.</div>
+    </details>
+
+    <details>
+      <summary>What did Chinchilla change, and why do labs now deliberately ignore it?</summary>
+      <div class="ans">It showed that for a fixed compute budget there's an optimal size-to-data ratio, roughly <strong>20 tokens per parameter</strong> &mdash; earlier models were badly undertrained. Labs now overtrain small models past that point because Chinchilla optimises <em>training</em> cost, while production pays <em>inference</em> cost forever.</div>
+    </details>
+
+    <details>
+      <summary>Someone says a capability &ldquo;emerged&rdquo; at 70B. What's the sharpest sceptical question?</summary>
+      <div class="ans">&ldquo;<strong>What metric?</strong>&rdquo; Exact-match accuracy is a step function by construction &mdash; zero until every digit is right. Schaeffer et al. (2023) showed much apparent emergence is a measurement artifact; the same model measured by per-token log-probability improves smoothly. The real lesson: loss is extrapolable, downstream capability is not.</div>
+    </details>
+
+    <details>
+      <summary>What actually makes something a foundation model?</summary>
+      <div class="ans">Broad pretraining data, at scale, via self-supervision, and <strong>adaptability to tasks nobody had in mind during training</strong>. Not parameter count. A broadly-pretrained 3B model qualifies; a 20B protein model trained for one task does not.</div>
+    </details>
+
+    <details>
+      <summary>You have a spam classifier running at 50k requests/second. Foundation model or task-specific?</summary>
+      <div class="ans"><strong>Task-specific</strong>, almost certainly distilled. Narrow scope, abundant labels, and a hard latency and cost ceiling &mdash; the three conditions where the old paradigm still wins outright. Use the foundation model to build the labelled set and prove the product, then distil the hot path.</div>
+    </details>
+
+    <details>
+      <summary>What's the single architectural knob separating generative from representation models?</summary>
+      <div class="ans">The <strong>attention mask</strong>. Causal (each token sees only its left context) gives you a decoder-only generative model; bidirectional (every token sees the whole sequence) gives you an encoder-only representation model. Objective differs too &mdash; next-token versus masked-token or contrastive &mdash; but the mask is the mechanical split.</div>
+    </details>
+
+    <details>
+      <summary>You need semantic search over 2M documents plus natural-language answers. How many models, which kind?</summary>
+      <div class="ans"><strong>Two.</strong> An embedding (representation) model to vectorise the corpus and each query for retrieval, and a generative model to write the answer from the retrieved chunks. Different cost curves, different failure modes: the embedding half is cheap, batchable and cacheable; the generative half is what shows up on the bill.</div>
+    </details>
+
+    <details>
+      <summary>Why are an LLM's hidden states a poor substitute for a real embedding model?</summary>
+      <div class="ans">Causal masking means the representation of any token never saw what came after it, and nothing in next-token training shaped that vector space for cosine similarity. A purpose-built contrastively-trained encoder, often 100× smaller, retrieves better.</div>
+    </details>
+
+  </div>
+</section>
+
+<!-- ========================= schedule ========================= -->
+<section class="sched">
+  <h2>Spacing schedule</h2>
+  <p>Cepeda et al. (2006): the gap is the active ingredient. These dates line up the &sect;1 reviews with the sections you're already scheduled to study, so review costs you minutes rather than a session.</p>
+  <div class="tbl-hold">
+  <table>
+    <thead>
+      <tr><th class="mono">Date</th><th>New material</th><th>&sect;1 review &mdash; from memory, no notes open</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="mono">2026-09-08</td><td>&sect;1 &mdash; this page</td><td>Answer the full retrieval bank once</td></tr>
+      <tr><td class="mono">2026-09-09</td><td>&sect;2 Transformer architecture</td><td>Q1, Q4, Q10 &mdash; then check</td></tr>
+      <tr><td class="mono">2026-09-11</td><td>&sect;4 Training paradigm</td><td>Q5, Q6, Q7 &mdash; the ones you got wrong first time</td></tr>
+      <tr><td class="mono">2026-09-14</td><td>&sect;6 Model ecosystem</td><td>Whole bank again, timed &mdash; aim under 12 min</td></tr>
+      <tr><td class="mono">2026-09-24</td><td>End of LLM Literacy</td><td>Explain &sect;1 aloud to someone with no notes at all</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<footer>
+  <span>Next-Token Field Notes</span>
+  <span>CampusX AI Engineer Track &middot; LLM Literacy &middot; &sect;1</span>
+  <span>Kaplan 2020 &middot; Hoffmann 2022 &middot; Bommasani 2021 &middot; Schaeffer 2023 &middot; Dunlosky 2013</span>
+</footer>
+
+</div>
+
+</body></html>
