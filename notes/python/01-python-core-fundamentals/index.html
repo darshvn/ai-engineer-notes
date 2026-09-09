@@ -497,6 +497,37 @@ dl.words dd { margin: 0; font-size: 15.5px; }
   body { margin: 0; }
   img { max-width: 100%; }
   [hidden] { display: none !important; }
+
+/* ---- orientation: the syllabus line each section answers ---------------- */
+.contents {
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  padding: 22px 26px;
+  margin: 34px 0 0;
+}
+.contents h2 {
+  font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; margin: 0 0 14px; color: var(--muted); font-weight: 600;
+}
+.contents ol { list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 9px; counter-reset: toc; }
+.contents li { display: grid; grid-template-columns: 30px 1fr; gap: 14px; align-items: baseline; }
+.contents li::before {
+  content: counter(toc, decimal-leading-zero); counter-increment: toc;
+  font-family: var(--f-mono); font-size: 11.5px; color: var(--signal);
+  font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.contents a { color: var(--ink); text-decoration: none;
+  border-bottom: 1px solid transparent; font-size: 15.5px; }
+.contents a:hover, .contents a:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
+.contents .said { display: block; font-family: var(--f-mono); font-size: 11.5px;
+  color: var(--muted); margin-top: 2px; }
+
+.item-name {
+  grid-column: 2; font-family: var(--f-mono); font-size: 11.5px;
+  color: var(--muted); margin-top: 7px; line-height: 1.45;
+}
+.item-name::before { content: "covers: "; color: var(--signal); }
 </style>
 </head>
 <body>
@@ -556,11 +587,25 @@ d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch
   <p>Every output on this page was produced by actually running the code, not written from memory. Run them yourself &mdash; they're all short enough to paste into a terminal, and predicting the output before you press enter is the whole point.</p>
 </div>
 
+<nav class="contents">
+  <h2>What's in here</h2>
+  <ol>
+    <li><a href="#s1">Indentation is grammar, not style<span class="said">Python syntax, indentation, code style (PEP8)</span></a></li>
+    <li><a href="#s2">Names, not variables<span class="said">Variables, data types, type casting</span></a></li>
+    <li><a href="#s3">Types, casting, and writing things down<span class="said">Input/output, comments, docstrings</span></a></li>
+    <li><a href="#s4">Loops and what counts as true<span class="said">Control flow: if / else, loops (for, while)</span></a></li>
+    <li><a href="#s5">Functions, and the default-argument trap<span class="said">Functions, arguments, return values</span></a></li>
+    <li><a href="#s6">Lambdas<span class="said">Lambda functions</span></a></li>
+    <li><a href="#s7">Comprehensions<span class="said">List / dict / set comprehensions</span></a></li>
+  </ol>
+</nav>
+
 <!-- ============================ 1 ============================ -->
-<section class="topic">
+<section class="topic" id="s1">
   <div class="topic-head">
     <div class="num">01</div>
     <h2 class="topic-title">Indentation is grammar, not style</h2>
+    <div class="item-name">Python syntax, indentation, code style (PEP8)</div>
   </div>
   <div class="body">
 
@@ -621,10 +666,11 @@ for i in [1, 2, 3]:
 </section>
 
 <!-- ============================ 2 ============================ -->
-<section class="topic">
+<section class="topic" id="s2">
   <div class="topic-head">
     <div class="num">02</div>
     <h2 class="topic-title">Names, not variables</h2>
+    <div class="item-name">Variables, data types, type casting</div>
   </div>
   <div class="body">
 
@@ -752,10 +798,11 @@ print(x == y)     <span class="out">→ True</span></pre></div>
 </section>
 
 <!-- ============================ 3 ============================ -->
-<section class="topic">
+<section class="topic" id="s3">
   <div class="topic-head">
     <div class="num">03</div>
-    <h2 class="topic-title">Types, casting, and reading input</h2>
+    <h2 class="topic-title">Types, casting, and writing things down</h2>
+    <div class="item-name">Input/output, comments, docstrings</div>
   </div>
   <div class="body">
 
@@ -784,9 +831,33 @@ print(type(age))         <span class="out">→ &lt;class 'str'&gt;</span>  <span
     <p>That refusal is a feature. JavaScript would have quietly returned something, and you'd find out much later.</p>
     <p>Note also that casting <em>constructs</em>, it doesn't reinterpret &mdash; which is why <code>int("30.0")</code> fails. The integer parser doesn't accept a decimal point. You need <code>int(float("30.0"))</code>.</p>
 
+
+    <div class="step">And one more thing that lives here</div>
+    <p>Two ways to write a note to a future reader. Only one of them still exists when the program runs:</p>
+
+    <div class="showcase"><pre>def retry(fn, attempts=3):
+    <span class="hl">"""Call fn until it returns without raising."""</span>   <span class="dim"># ← docstring</span>
+    <span class="dim"># give up after `attempts` tries          ← comment</span>
+    ...
+
+retry.__doc__
+<span class="out">'Call fn until it returns without raising.'</span>
+
+<span class="dim"># the # comment? Gone. Not stored anywhere, not reachable.</span></pre></div>
+    <p class="caption-note">Real output. A string in the first line of a function is bound to <code>__doc__</code>; a <code>#</code> comment is discarded before the program exists.</p>
+
+    <dl class="words">
+      <div><dt>comment</dt><dd>A <code>#</code> note for whoever reads the source. Thrown away at compile time.</dd></div>
+      <div><dt>docstring</dt><dd>A string on the first line of a function, class or file. Becomes a real attribute you can read while the program runs.</dd></div>
+    </dl>
+
+    <p>That difference is why docstrings are worth writing carefully. <code>help(retry)</code> prints it, your editor shows it on hover, and documentation tools read it straight out of the code. A comment reaches only someone with the file open.</p>
+    <p>The useful split: <strong>comments explain <em>why</em></strong> &mdash; the reason this odd-looking line exists. <strong>Docstrings explain <em>how to use it</em></strong> &mdash; what goes in, what comes out. A comment that just restates the code is worse than none, because now there are two things that can drift apart and only one of them is checked.</p>
+
     <div class="step rule-step">The rule</div>
     <div class="rule">
       <p>Names have no type; objects do, and Python enforces them. <code>input()</code> hands you a string every time.</p>
+      <p>Comments vanish at compile time; docstrings survive into the running program.</p>
     </div>
 
     <div class="check">
@@ -799,10 +870,11 @@ print(type(age))         <span class="out">→ &lt;class 'str'&gt;</span>  <span
 </section>
 
 <!-- ============================ 4 ============================ -->
-<section class="topic">
+<section class="topic" id="s4">
   <div class="topic-head">
     <div class="num">04</div>
     <h2 class="topic-title">Loops and what counts as true</h2>
+    <div class="item-name">Control flow: if / else, loops (for, while)</div>
   </div>
   <div class="body">
 
@@ -853,10 +925,11 @@ for i, x in enumerate(xs): print(i, x)      <span class="dim"># when you need th
 </section>
 
 <!-- ============================ 5 ============================ -->
-<section class="topic">
+<section class="topic" id="s5">
   <div class="topic-head">
     <div class="num">05</div>
     <h2 class="topic-title">Functions, and the default-argument trap</h2>
+    <div class="item-name">Functions, arguments, return values</div>
   </div>
   <div class="body">
 
@@ -919,10 +992,11 @@ add(2)    <span class="out">→ [2]</span>          <span class="dim"># fixed</s
 </section>
 
 <!-- ============================ 6 ============================ -->
-<section class="topic">
+<section class="topic" id="s6">
   <div class="topic-head">
     <div class="num">06</div>
     <h2 class="topic-title">Lambdas</h2>
+    <div class="item-name">Lambda functions</div>
   </div>
   <div class="body">
 
@@ -968,10 +1042,11 @@ fs = [lambda <span class="hl">i=i</span>: i for i in range(3)]
 </section>
 
 <!-- ============================ 7 ============================ -->
-<section class="topic">
+<section class="topic" id="s7">
   <div class="topic-head">
     <div class="num">07</div>
     <h2 class="topic-title">Comprehensions</h2>
+    <div class="item-name">List / dict / set comprehensions</div>
   </div>
   <div class="body">
 

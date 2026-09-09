@@ -497,6 +497,37 @@ dl.words dd { margin: 0; font-size: 15.5px; }
   body { margin: 0; }
   img { max-width: 100%; }
   [hidden] { display: none !important; }
+
+/* ---- orientation: the syllabus line each section answers ---------------- */
+.contents {
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  padding: 22px 26px;
+  margin: 34px 0 0;
+}
+.contents h2 {
+  font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; margin: 0 0 14px; color: var(--muted); font-weight: 600;
+}
+.contents ol { list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 9px; counter-reset: toc; }
+.contents li { display: grid; grid-template-columns: 30px 1fr; gap: 14px; align-items: baseline; }
+.contents li::before {
+  content: counter(toc, decimal-leading-zero); counter-increment: toc;
+  font-family: var(--f-mono); font-size: 11.5px; color: var(--signal);
+  font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.contents a { color: var(--ink); text-decoration: none;
+  border-bottom: 1px solid transparent; font-size: 15.5px; }
+.contents a:hover, .contents a:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
+.contents .said { display: block; font-family: var(--f-mono); font-size: 11.5px;
+  color: var(--muted); margin-top: 2px; }
+
+.item-name {
+  grid-column: 2; font-family: var(--f-mono); font-size: 11.5px;
+  color: var(--muted); margin-top: 7px; line-height: 1.45;
+}
+.item-name::before { content: "covers: "; color: var(--signal); }
 </style>
 </head>
 <body>
@@ -556,11 +587,24 @@ d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch
   <p>There's one question at the end of each section with the answer folded away. Answer it before you open it. If you can't, re-read that section rather than moving on &mdash; each one is used by the next.</p>
 </div>
 
+<nav class="contents">
+  <h2>What's in here</h2>
+  <ol>
+    <li><a href="#s1">What "language modeling" means<span class="said">What "language modeling" actually means</span></a></li>
+    <li><a href="#s2">How it learns to fill in that table<span class="said">Next-token prediction intuition</span></a></li>
+    <li><a href="#s3">Why guessing tokens produces reasoning<span class="said">Why predicting the next token leads to reasoning-like behavior</span></a></li>
+    <li><a href="#s4">What gets better when models get bigger<span class="said">Emergence &amp; scale laws (intuition, not research-heavy)</span></a></li>
+    <li><a href="#s5">One general model, or one model per job<span class="said">Foundation models vs task-specific models</span></a></li>
+    <li><a href="#s6">Two kinds of model, two kinds of output<span class="said">Generative vs representation models</span></a></li>
+  </ol>
+</nav>
+
 <!-- ============================ 1 ============================ -->
 <section class="topic" id="s1">
   <div class="topic-head">
     <div class="num">01</div>
     <h2 class="topic-title">What &ldquo;language modeling&rdquo; means</h2>
+    <div class="item-name">What "language modeling" actually means</div>
   </div>
   <div class="body">
 
@@ -662,6 +706,7 @@ d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch
   <div class="topic-head">
     <div class="num">02</div>
     <h2 class="topic-title">How it learns to fill in that table</h2>
+    <div class="item-name">Next-token prediction intuition</div>
   </div>
   <div class="body">
 
@@ -721,6 +766,7 @@ model says          truth is " mat"        score
   <div class="topic-head">
     <div class="num">03</div>
     <h2 class="topic-title">Why guessing tokens produces reasoning</h2>
+    <div class="item-name">Why predicting the next token leads to reasoning-like behavior</div>
   </div>
   <div class="body">
 
@@ -822,6 +868,7 @@ model says          truth is " mat"        score
   <div class="topic-head">
     <div class="num">04</div>
     <h2 class="topic-title">What gets better when models get bigger</h2>
+    <div class="item-name">Emergence &amp; scale laws (intuition, not research-heavy)</div>
   </div>
   <div class="body">
 
@@ -842,6 +889,7 @@ model says          truth is " mat"        score
     <div class="step">Words</div>
     <dl class="words">
       <div><dt>parameters</dt><dd>The internal numbers that get nudged during training. &ldquo;7 billion&rdquo; means seven billion of them. Bigger usually means better, at a cost.</dd></div>
+      <div><dt>emergence</dt><dd>The name for what the right-hand column does &mdash; an ability that is absent at small scale and present at large scale, appearing in a jump rather than creeping up. This is the word people use for it; whether it is real or an artifact of the ruler is the point of this section.</dd></div>
       <div><dt>scaling law</dt><dd>The observed fact that <strong>loss</strong> falls in a predictable line as size and data go up. Predictable enough to forecast a model you haven't built.</dd></div>
     </dl>
 
@@ -874,6 +922,7 @@ model says          truth is " mat"        score
   <div class="topic-head">
     <div class="num">05</div>
     <h2 class="topic-title">One general model, or one model per job</h2>
+    <div class="item-name">Foundation models vs task-specific models</div>
   </div>
   <div class="body">
 
@@ -925,6 +974,7 @@ model says          truth is " mat"        score
   <div class="topic-head">
     <div class="num">06</div>
     <h2 class="topic-title">Two kinds of model, two kinds of output</h2>
+    <div class="item-name">Generative vs representation models</div>
   </div>
   <div class="body">
 
