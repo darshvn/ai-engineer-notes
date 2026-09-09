@@ -3,11 +3,10 @@
     {
       "topic": "llm-101",
       "section": 1,
-      "title": "Next-Token Field Notes",
+      "title": "What a Language Model Actually Does",
       "path": "notes/llm-101/01-what-is-a-large-language-model",
       "track": "ai-engineer-track",
-      "added": "2026-09-08",
-      "artifact": "https://claude.ai/code/artifact/fc66a88a-d714-4c8e-ac26-aa4666a529ee"
+      "added": "2026-09-09"
     },
     {
       "topic": "python",
@@ -15,7 +14,7 @@
       "title": "Names, Not Variables",
       "path": "notes/python/01-python-core-fundamentals",
       "track": "prerequisites",
-      "added": "2026-09-08"
+      "added": "2026-09-09"
     }
   ]
 }
