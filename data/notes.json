@@ -7,14 +7,6 @@
       "path": "notes/llm-101/01-what-is-a-large-language-model",
       "track": "ai-engineer-track",
       "added": "2026-09-09"
-    },
-    {
-      "topic": "python",
-      "section": 1,
-      "title": "Names, Not Variables",
-      "path": "notes/python/01-python-core-fundamentals",
-      "track": "prerequisites",
-      "added": "2026-09-09"
     }
   ]
 }
