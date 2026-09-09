@@ -1,0 +1,1142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How the Machine Is Built</title>
+<meta name="description" content="The transformer explained through real calculations — attention, multi-head, masks, positional encoding and the KV cache.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
+<style>
+:root {
+  --bg:        #E9EBE7;
+  --surface:   #F6F7F4;
+  --surface-2: #DFE3DE;
+  --ink:       #14181A;
+  --muted:     #59635F;
+  --rule:      #C9CFC8;
+  --accent:    #146B5F;
+  --accent-dim:#DCE8E4;
+  --signal:    #9A2C6B;
+  --signal-dim:#F0DEE8;
+
+  --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --f-body:    "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --f-mono:    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --col: 66ch;
+  --wide: 860px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:        #121614;
+    --surface:   #1A201D;
+    --surface-2: #232A27;
+    --ink:       #E6EAE6;
+    --muted:     #929F99;
+    --rule:      #2E3733;
+    --accent:    #56BCAC;
+    --accent-dim:#1C2E2B;
+    --signal:    #E982B8;
+    --signal-dim:#33202B;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:        #121614;
+  --surface:   #1A201D;
+  --surface-2: #232A27;
+  --ink:       #E6EAE6;
+  --muted:     #929F99;
+  --rule:      #2E3733;
+  --accent:    #56BCAC;
+  --accent-dim:#1C2E2B;
+  --signal:    #E982B8;
+  --signal-dim:#33202B;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16.5px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 0 24px 96px;
+}
+
+/* ---------- masthead ---------- */
+
+.mast {
+  padding: 72px 0 40px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+}
+.eyebrow span.sep { color: var(--rule); }
+h1 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+.standfirst {
+  font-family: var(--f-display);
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 56ch;
+  margin: 0;
+}
+
+/* ---------- how to use ---------- */
+
+.howto {
+  margin: 40px 0 0;
+  padding: 24px 26px;
+  background: var(--accent-dim);
+  border-left: 3px solid var(--accent);
+}
+.howto h2 {
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.howto p { margin: 0 0 10px; max-width: 62ch; font-size: 15.5px; }
+.howto p:last-child { margin-bottom: 0; }
+
+/* ---------- sections ---------- */
+
+section.topic {
+  padding-top: 64px;
+  scroll-margin-top: 24px;
+}
+.topic-head {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 0 18px;
+  align-items: start;
+  border-top: 1px solid var(--rule);
+  padding-top: 20px;
+}
+.num {
+  font-family: var(--f-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--signal);
+  padding-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+h2.topic-title {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: clamp(1.7rem, 3.6vw, 2.2rem);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.body { max-width: var(--col); margin-left: 64px; }
+@media (max-width: 640px) { .body { margin-left: 0; } .topic-head { grid-template-columns: 34px 1fr; gap: 0 12px; } }
+
+.body p { margin: 18px 0; }
+.body ul, .body ol { margin: 18px 0; padding-left: 22px; }
+.body li { margin: 7px 0; }
+
+
+code, .mono { font-family: var(--f-mono); font-size: 0.88em; }
+.body code {
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+strong { font-weight: 600; }
+em { font-style: italic; }
+
+.formula {
+  font-family: var(--f-mono);
+  font-size: 14.5px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 16px 18px;
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.75;
+  margin: 22px 0;
+}
+
+/* misconception */
+.bust {
+  border: 1px solid var(--signal);
+  background: var(--signal-dim);
+  padding: 18px 20px;
+  margin: 26px 0;
+}
+.bust .tag {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--signal);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+.bust p { margin: 0 0 10px; font-size: 15.5px; }
+.bust p:last-child { margin-bottom: 0; }
+
+/* takeaway */
+.takeaway {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: baseline;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 14px 0;
+  margin: 28px 0 8px;
+}
+.takeaway .tag {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.takeaway p { margin: 0; font-size: 15.5px; }
+
+/* figures */
+figure {
+  margin: 34px 0;
+  max-width: var(--wide);
+}
+figure .svg-hold { overflow-x: auto; }
+figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
+figcaption {
+  font-family: var(--f-body);
+  font-size: 14.5px;
+  line-height: 1.62;
+  color: var(--muted);
+  margin-top: 14px;
+  padding-left: 16px;
+  border-left: 2px solid var(--rule);
+  max-width: 66ch;
+}
+figcaption .mono, figcaption code {
+  font-family: var(--f-mono);
+  font-size: 0.88em;
+  color: var(--ink);
+}
+figcaption em { color: var(--ink); }
+
+/* tables */
+.tbl-hold { overflow-x: auto; margin: 26px 0; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14.5px;
+  min-width: 520px;
+}
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+th {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--ink);
+}
+td:first-child { font-weight: 500; }
+tbody tr:last-child td { border-bottom: 0; }
+td.mono, th.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* retrieval */
+.retrieval { margin-top: 80px; border-top: 3px double var(--rule); padding-top: 40px; }
+.retrieval h2 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 2rem;
+  margin: 0 0 10px;
+  letter-spacing: -0.015em;
+}
+.retrieval > p { max-width: var(--col); color: var(--muted); margin: 0 0 26px; }
+details {
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  margin-bottom: 10px;
+}
+details[open] { background: var(--surface-2); }
+summary {
+  cursor: pointer;
+  padding: 14px 18px;
+  font-weight: 500;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  align-items: baseline;
+}
+summary::-webkit-details-marker { display: none; }
+summary::before {
+  content: "Q" counter(qc);
+  counter-increment: qc;
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  color: var(--signal);
+  font-weight: 600;
+}
+.qlist { counter-reset: qc; }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details .ans {
+  padding: 0 18px 16px 58px;
+  font-size: 15.5px;
+  color: var(--muted);
+  max-width: 70ch;
+}
+details .ans strong { color: var(--ink); }
+
+/* schedule */
+.sched { margin-top: 64px; border-top: 1px solid var(--rule); padding-top: 32px; }
+.sched h2 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 1.7rem;
+  margin: 0 0 8px;
+}
+.sched > p { max-width: var(--col); color: var(--muted); margin: 0 0 22px; }
+
+footer {
+  margin-top: 72px;
+  padding-top: 22px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+<style>
+/* ---- worked-example format ----------------------------------------------
+   Each section runs: See it (a real example) → Words (defined before use)
+   → Walk it (worked steps) → The rule (stated last, never first).
+   The old notes led with the abstract claim; that order is reversed here. */
+
+.step {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 30px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.step::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+.step.rule-step { color: var(--signal); }
+.step.rule-step::after { background: var(--signal); opacity: 0.35; }
+
+/* the concrete opening example */
+.showcase {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 20px 22px;
+  margin: 16px 0;
+  overflow-x: auto;
+}
+.showcase pre {
+  font-family: var(--f-mono);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre;
+}
+.showcase .hl { color: var(--signal); font-weight: 600; }
+.showcase .dim { color: var(--muted); }
+.showcase .out { color: var(--accent); }
+.caption-note {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 8px 0 0;
+  font-style: italic;
+}
+
+/* vocabulary — named before the process uses them */
+dl.words { margin: 14px 0; display: flex; flex-direction: column; gap: 12px; }
+dl.words > div {
+  display: grid;
+  grid-template-columns: 152px 1fr;
+  gap: 16px;
+  align-items: baseline;
+}
+dl.words dt {
+  font-family: var(--f-mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+dl.words dd { margin: 0; font-size: 15.5px; }
+@media (max-width: 620px) {
+  dl.words > div { grid-template-columns: 1fr; gap: 2px; }
+}
+
+/* the general statement, arrived at rather than asserted */
+.rule {
+  border: 1px solid var(--signal);
+  background: var(--signal-dim);
+  padding: 18px 22px;
+  margin: 14px 0 8px;
+  font-size: 16.5px;
+  line-height: 1.55;
+}
+.rule p { margin: 0 0 10px; }
+.rule p:last-child { margin-bottom: 0; }
+
+/* one question, immediately after the thing it tests */
+.check {
+  border-left: 3px solid var(--accent);
+  padding: 4px 0 4px 18px;
+  margin: 26px 0 8px;
+}
+.check .q { font-size: 15.5px; margin: 0 0 8px; }
+.check details { border: 0; background: transparent; margin: 0; }
+.check summary {
+  display: inline-block;
+  padding: 0;
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 600;
+}
+.check summary::before { content: none; }
+.check summary:hover { text-decoration: underline; }
+.check .ans {
+  padding: 10px 0 0;
+  font-size: 15.5px;
+  color: var(--muted);
+  max-width: 66ch;
+}
+.check .ans strong { color: var(--ink); }
+
+/* a fact worth stopping on — used sparingly, never for colour */
+.gotcha {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--signal);
+  background: var(--surface);
+  padding: 16px 20px;
+  margin: 24px 0;
+  font-size: 15.5px;
+}
+.gotcha p { margin: 0 0 10px; }
+.gotcha p:last-child { margin: 0; }
+.gotcha b {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--signal);
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+</style>
+
+<style>
+  :root { color-scheme: light dark; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+
+/* ---- orientation: the syllabus line each section answers ---------------- */
+.contents {
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  padding: 22px 26px;
+  margin: 34px 0 0;
+}
+.contents h2 {
+  font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; margin: 0 0 14px; color: var(--muted); font-weight: 600;
+}
+.contents ol { list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 9px; counter-reset: toc; }
+.contents li { display: grid; grid-template-columns: 30px 1fr; gap: 14px; align-items: baseline; }
+.contents li::before {
+  content: counter(toc, decimal-leading-zero); counter-increment: toc;
+  font-family: var(--f-mono); font-size: 11.5px; color: var(--signal);
+  font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.contents a { color: var(--ink); text-decoration: none;
+  border-bottom: 1px solid transparent; font-size: 15.5px; }
+.contents a:hover, .contents a:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
+.contents .said { display: block; font-family: var(--f-mono); font-size: 11.5px;
+  color: var(--muted); margin-top: 2px; }
+
+.item-name {
+  grid-column: 2; font-family: var(--f-mono); font-size: 11.5px;
+  color: var(--muted); margin-top: 7px; line-height: 1.45;
+}
+.item-name::before { content: "covers: "; color: var(--signal); }
+</style>
+</head>
+<body>
+<!--CHROME:START-->
+<style>
+  .note-chrome{position:sticky;top:0;z-index:40;background:var(--surface);
+    border-bottom:1px solid var(--rule);font-family:var(--f-mono);font-size:11.5px}
+  .note-chrome .inner{max-width:940px;margin:0 auto;padding:10px 24px;
+    display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
+  .note-chrome a{color:var(--accent);text-decoration:none}
+  .note-chrome a:hover{text-decoration:underline}
+  .crumb{color:var(--muted);letter-spacing:.06em}
+  .crumb b{color:var(--ink);font-weight:600}
+  .note-chrome .spacer{flex:1 1 auto}
+  .nav-adj{display:inline-flex;gap:7px;align-items:baseline;max-width:260px}
+  .nav-dir{color:var(--muted);white-space:nowrap}
+  .nav-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #theme-toggle{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;font-weight:600;color:var(--muted);background:transparent;
+    border:1px solid var(--rule);border-radius:2px;padding:5px 9px;cursor:pointer;line-height:1}
+  #theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
+  @media print{.note-chrome{display:none}}
+</style>
+<nav class="note-chrome"><div class="inner">
+  <a href="../../../">&larr; All notes</a>
+  <span class="crumb">LLM 101 / <b>&sect;2</b></span>
+  <span class="spacer"></span>
+  <a class="nav-adj" href="../../llm-101/01-what-is-a-large-language-model/"><span class="nav-dir">&larr;</span><span class="nav-t">What a Language Model Actually Does</span></a>
+  
+  <button id="theme-toggle" type="button">Theme</button>
+</div></nav>
+<script>
+(function(){var r=document.documentElement,b=document.getElementById('theme-toggle'),K='aen-theme';
+function sd(){return !!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)}
+function ap(t){t?r.setAttribute('data-theme',t):r.removeAttribute('data-theme');
+var d=t?t==='dark':sd();b.textContent=d?'Light':'Dark';
+b.setAttribute('aria-label','Switch to '+(d?'light':'dark')+' theme')}
+var s=null;try{s=localStorage.getItem(K)}catch(e){}ap(s);
+b.addEventListener('click',function(){var c=r.getAttribute('data-theme'),
+d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch(e){}});})();
+</script>
+<!--CHROME:END-->
+<!--CHROME:START-->
+<style>
+  .note-chrome{position:sticky;top:0;z-index:40;background:var(--surface);
+    border-bottom:1px solid var(--rule);font-family:var(--f-mono);font-size:11.5px}
+  .note-chrome .inner{max-width:940px;margin:0 auto;padding:10px 24px;
+    display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
+  .note-chrome a{color:var(--accent);text-decoration:none}
+  .note-chrome a:hover{text-decoration:underline}
+  .crumb{color:var(--muted);letter-spacing:.06em}
+  .crumb b{color:var(--ink);font-weight:600}
+  .note-chrome .spacer{flex:1 1 auto}
+  .nav-adj{display:inline-flex;gap:7px;align-items:baseline;max-width:260px}
+  .nav-dir{color:var(--muted);white-space:nowrap}
+  .nav-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #theme-toggle{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;font-weight:600;color:var(--muted);background:transparent;
+    border:1px solid var(--rule);border-radius:2px;padding:5px 9px;cursor:pointer;line-height:1}
+  #theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
+  @media print{.note-chrome{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <div class="eyebrow">
+    <span>LLM 101</span><span class="sep">/</span>
+    <span>&sect;2</span>
+  </div>
+  <h1>How the Machine Is Built</h1>
+  <p class="standfirst">The transformer, without the maths &mdash; but with the actual arithmetic, so you can see what attention does rather than being told.</p>
+</header>
+
+<div class="howto">
+  <h2>How to read this</h2>
+  <p>Same four steps as &sect;1: <strong>see it</strong>, <strong>words</strong>, <strong>walk it</strong>, <strong>the rule</strong>. Every number on this page was computed, not remembered &mdash; the attention example is a real calculation you could redo in ten lines of NumPy.</p>
+  <p>&sect;1 said a model turns text into a table of next-token probabilities. This is the part that explains <em>how</em>. It's also the section that lets you reason about speed and cost later, which is why it's worth the time.</p>
+</div>
+
+<nav class="contents">
+  <h2>What's in here</h2>
+  <ol>
+    <li><a href="#s1">Why the old approach hit a wall<span class="said">Why RNNs failed at scale</span></a></li>
+    <li><a href="#s2">The problem attention solves<span class="said">Attention mechanism intuition</span></a></li>
+    <li><a href="#s3">Self-attention, calculated<span class="said">Self-attention explained visually</span></a></li>
+    <li><a href="#s4">Why there are many attentions, not one<span class="said">Multi-head attention purpose</span></a></li>
+    <li><a href="#s5">Three ways to wire it up<span class="said">Encoder-only vs Decoder-only vs Encoder-Decoder</span></a></li>
+    <li><a href="#s6">Why almost every LLM is decoder-only<span class="said">Why decoder-only models dominate LLMs</span></a></li>
+    <li><a href="#s7">Order, position, and how much fits<span class="said">Context window &amp; positional encoding</span></a></li>
+    <li><a href="#s8">The KV cache<span class="said">KV cache intuition (important for engineering)</span></a></li>
+  </ol>
+</nav>
+
+<!-- 1 -->
+<section class="topic" id="s1">
+  <div class="topic-head">
+    <div class="num">01</div>
+    <h2 class="topic-title">Why the old approach hit a wall</h2>
+    <div class="item-name">Why RNNs failed at scale</div>
+  </div>
+  <div class="body">
+
+    <div class="step">See it</div>
+    <p>Before transformers, models read text the way you do &mdash; one word at a time, carrying a memory forward. Count the steps for a 1,000-token document:</p>
+
+    <div class="showcase"><pre><span class="dim">RNN — must go in order</span>
+  tok 1 → tok 2 → tok 3 → … → tok 1000
+  <span class="hl">1,000 steps, each waiting for the one before</span>
+
+<span class="dim">Transformer — all positions at once</span>
+  tok 1  tok 2  tok 3  …  tok 1000
+    ↓      ↓      ↓         ↓
+  <span class="out">1 step. Every token processed simultaneously.</span></pre></div>
+
+    <div class="step">Words</div>
+    <dl class="words">
+      <div><dt>RNN</dt><dd>Recurrent Neural Network. Reads one token, updates a memory, reads the next. The design that dominated before 2017.</dd></div>
+      <div><dt>hidden state</dt><dd>That carried-forward memory. One fixed-size bundle of numbers holding everything seen so far.</dd></div>
+      <div><dt>parallel</dt><dd>Work that can happen at the same time. GPUs are fast <em>only</em> at this; give one sequential work and it idles.</dd></div>
+    </dl>
+
+    <div class="step">Walk it</div>
+    <p>Two problems, and the second is the one that actually killed it.</p>
+    <p><strong>Information decays.</strong> For a fact at token 1 to matter at token 1,000, it has to survive 999 rewrites of one fixed-size memory. It mostly doesn't.</p>
+    <p><strong>You can't use the hardware.</strong> Step 500 needs step 499's output, so no amount of GPU will run them together. Training on a large corpus would have taken years of wall-clock time &mdash; not because the maths was hard, but because it refused to go in parallel.</p>
+
+    <div class="gotcha">
+      <b>The thing that's easy to get backwards</b>
+      <p>RNNs weren't beaten because they were worse at language. They were beaten because they couldn't be <em>trained big enough to find out</em>.</p>
+      <p>The transformer's real contribution was removing the sequential dependency during training. Everything else follows from being able to spend a thousand GPUs on one model.</p>
+    </div>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>RNNs process in order, so training can't be parallelised and long-range information degrades. Transformers process every position at once &mdash; which is what made scale possible.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">&sect;1 said generation is one token at a time. Doesn't that make transformers sequential too?</p>
+      <details><summary>Show answer</summary>
+        <div class="ans">Yes &mdash; <strong>at generation time</strong>. The parallelism is in <em>training</em>, where the whole text is already known so every position can be scored at once. Generation is still one token per pass. Training parallel, generation serial: that split explains most of what follows.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="topic" id="s2">
+  <div class="topic-head">
+    <div class="num">02</div>
+    <h2 class="topic-title">The problem attention solves</h2>
+    <div class="item-name">Attention mechanism intuition</div>
+  </div>
+  <div class="body">
+
+    <div class="step">See it</div>
+    <p>Read this sentence and answer what <code>it</code> refers to:</p>
+
+    <div class="showcase"><pre>"The animal didn't cross the street because <span class="hl">it</span> was too tired."
+                                            <span class="hl">↑</span>
+"The animal didn't cross the street because <span class="hl">it</span> was too wide."
+                                            <span class="hl">↑</span></pre></div>
+
+    <p>First one: <code>it</code> is the animal. Second: <code>it</code> is the street. One word changed at the very end, eight tokens away, and the meaning of <code>it</code> flipped.</p>
+    <p>So whatever processes <code>it</code> must be able to reach back and pull in the right earlier word &mdash; and which word is right depends on a token that comes <em>after</em> it.</p>
+
+    <div class="step">Words</div>
+    <dl class="words">
+      <div><dt>attention</dt><dd>A step where every token looks at every other token, decides how relevant each one is, and mixes them into itself accordingly.</dd></div>
+      <div><dt>weights</dt><dd>The relevance numbers. One per pair of tokens, always adding to 1 for each looking token.</dd></div>
+    </dl>
+
+    <div class="step">Walk it</div>
+    <p>The RNN answer was &ldquo;carry a memory forward and hope the animal is still in it.&rdquo; The attention answer is direct: let <code>it</code> look at <em>every</em> token in the sentence at once and take mostly the relevant one.</p>
+    <p>Distance stops mattering. Token 900 reaching token 3 is the same single operation as reaching token 899 &mdash; there are no hops to survive.</p>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>Attention lets any token pull information directly from any other token in one step, with the mixture decided by content rather than by distance.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">Why is &ldquo;distance stops mattering&rdquo; the important part?</p>
+      <details><summary>Show answer</summary>
+        <div class="ans">Because in an RNN, information from token 3 reaching token 900 had to survive <strong>897 rewrites</strong> of a fixed-size memory. With attention it's <strong>one</strong> operation, identical in cost and fidelity to reaching a neighbour.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="topic" id="s3">
+  <div class="topic-head">
+    <div class="num">03</div>
+    <h2 class="topic-title">Self-attention, calculated</h2>
+    <div class="item-name">Self-attention explained visually</div>
+  </div>
+  <div class="body">
+
+    <div class="step">See it</div>
+    <p>Here is attention actually running, on the same word in two sentences. Each word is four numbers; the first two mean roughly <em>water-ness</em> and <em>money-ness</em>:</p>
+
+    <div class="showcase"><pre>"bank" goes in as   [<span class="hl">1.60</span>, <span class="hl">1.60</span>, 0.80, 0.00]   <span class="dim">← ambiguous, both ways</span>
+
+<span class="out">"the river bank"</span>              <span class="out">"the savings bank"</span>
+  attention from "bank":        attention from "bank":
+    the        0.14               the        0.14
+    river      0.31               savings    0.31
+    bank       0.56               bank       0.56
+
+  comes out as                  comes out as
+  [<span class="hl">1.73</span>, <span class="hl">0.93</span>, 0.94, 0.00]        [<span class="hl">0.93</span>, <span class="hl">1.73</span>, 0.94, 0.00]
+   <span class="dim">water  money</span>                  <span class="dim">water  money</span></pre></div>
+    <p class="caption-note">Real output. The word vectors are chosen so the dimensions are readable; in a trained model they're learned. The arithmetic is genuine self-attention.</p>
+
+    <p><strong>Identical input, opposite output.</strong> The vector for <code>bank</code> went in balanced and came out leaning water in one sentence and money in the other &mdash; purely because attention mixed in a different neighbour.</p>
+
+    <div class="step">Words</div>
+    <dl class="words">
+      <div><dt>dot product</dt><dd>Multiply two vectors position by position and add it up. One number saying how aligned they are &mdash; big if they point the same way.</dd></div>
+      <div><dt>softmax</dt><dd>Turns any list of numbers into positive ones adding to 1. Turns raw scores into weights.</dd></div>
+      <div><dt>self-attention</dt><dd>Attention where the tokens look at each other, rather than at some separate sentence.</dd></div>
+    </dl>
+
+    <div class="step">Walk it</div>
+    <p>Three operations, in order:</p>
+    <ol>
+      <li><strong>Score.</strong> Dot-product every token against every other. Aligned vectors score high. <code>bank</code>&middot;<code>river</code> is large because they share the water dimension.</li>
+      <li><strong>Soften.</strong> Divide by <code>&radic;d</code>, then softmax each row. Now every row is weights adding to 1.</li>
+      <li><strong>Mix.</strong> Each token's output is the weighted average of all the token vectors, using its own row of weights.</li>
+    </ol>
+    <p>That's it. Everything else in a transformer is stacking this and putting ordinary layers between.</p>
+  </div>
+
+  <figure>
+    <div class="svg-hold">
+    <svg viewBox="0 0 660 214" role="img" aria-label="Three token vectors are dot-producted against each other to give a grid of scores; each row is divided by the square root of the dimension and softmaxed into weights adding to one; each token's output is the weighted average of all token vectors using its own row of weights.">
+      <defs>
+        <marker id="t1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <text x="16" y="20" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.2" fill="currentColor" opacity="0.55">1 · SCORE</text>
+      <text x="234" y="20" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.2" fill="currentColor" opacity="0.55">2 · SOFTEN</text>
+      <text x="452" y="20" font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.2" fill="var(--signal)">3 · MIX</text>
+
+      <!-- score grid -->
+      <g font-family="'IBM Plex Mono', monospace" font-size="10.5">
+        <text x="52" y="46" fill="currentColor" opacity="0.6">the</text>
+        <text x="94" y="46" fill="currentColor" opacity="0.6">riv</text>
+        <text x="136" y="46" fill="currentColor" opacity="0.6">bnk</text>
+        <text x="16" y="70" fill="currentColor" opacity="0.6">the</text>
+        <text x="16" y="96" fill="currentColor" opacity="0.6">riv</text>
+        <text x="16" y="122" fill="var(--signal)">bnk</text>
+      </g>
+      <g fill="none" stroke="currentColor" stroke-width="1" opacity="0.4">
+        <rect x="44" y="54" width="38" height="24"/><rect x="86" y="54" width="38" height="24"/><rect x="128" y="54" width="38" height="24"/>
+        <rect x="44" y="80" width="38" height="24"/><rect x="86" y="80" width="38" height="24"/><rect x="128" y="80" width="38" height="24"/>
+      </g>
+      <g fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.4">
+        <rect x="44" y="106" width="38" height="24"/><rect x="86" y="106" width="38" height="24"/><rect x="128" y="106" width="38" height="24"/>
+      </g>
+      <g font-family="'IBM Plex Mono', monospace" font-size="10.5" text-anchor="middle" fill="var(--signal)">
+        <text x="63" y="122">2.96</text><text x="105" y="122">4.56</text><text x="147" y="122">5.76</text>
+      </g>
+      <text x="105" y="152" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.6">raw scores</text>
+
+      <line x1="180" y1="112" x2="216" y2="112" stroke="currentColor" stroke-width="1.3" opacity="0.7" marker-end="url(#t1)"/>
+
+      <!-- softmax -->
+      <g fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.4">
+        <rect x="228" y="106" width="38" height="24"/><rect x="270" y="106" width="38" height="24"/><rect x="312" y="106" width="38" height="24"/>
+      </g>
+      <g font-family="'IBM Plex Mono', monospace" font-size="10.5" text-anchor="middle" fill="var(--signal)">
+        <text x="247" y="122">0.14</text><text x="289" y="122">0.31</text><text x="331" y="122">0.56</text>
+      </g>
+      <text x="289" y="88" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.6">÷ √d, then softmax</text>
+      <text x="289" y="152" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.6">weights — add to 1.00</text>
+
+      <line x1="364" y1="112" x2="400" y2="112" stroke="currentColor" stroke-width="1.3" opacity="0.7" marker-end="url(#t1)"/>
+
+      <!-- mix -->
+      <g font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="currentColor" opacity="0.7">
+        <text x="412" y="70">0.14 × the</text>
+        <text x="412" y="90">0.31 × river</text>
+        <text x="412" y="110">0.56 × bank</text>
+      </g>
+      <line x1="408" y1="120" x2="512" y2="120" stroke="currentColor" stroke-width="1" opacity="0.4"/>
+      <rect x="408" y="130" width="164" height="26" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="1.5"/>
+      <text x="490" y="147" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--accent)">[1.73, 0.93, 0.94, 0]</text>
+      <text x="490" y="174" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--accent)">"bank", now water-flavoured</text>
+
+      <text x="330" y="202" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="currentColor" opacity="0.55">every token does this, for every other token, at the same time</text>
+    </svg>
+    </div>
+    <figcaption>The highlighted row is <span class="mono">bank</span>'s. Its three weights are how much of each token it takes, and they always sum to 1 — so the output is a blend of the sentence, weighted by relevance, rather than the word on its own.</figcaption>
+  </figure>
+
+  <div class="body">
+    <div class="gotcha">
+      <b>Why divide by &radic;d</b>
+      <p>Scores grow with the number of dimensions. Feed big ones straight into softmax and it saturates &mdash; one weight goes to ~1 and the rest to ~0, so the token stops blending and just copies its best match.</p>
+      <p>Real numbers from the same example. Same scores, scaled ten times larger:</p>
+      <div class="showcase" style="margin:10px 0 0"><pre>properly scaled   0.16  0.29  0.27  0.28   <span class="out">← a blend</span>
+scaled up 10×     0.00  0.46  0.25  0.28   <span class="hl">← collapsing</span></pre></div>
+      <p style="margin-top:12px">Dividing by <code>&radic;d</code> keeps scores in the range where softmax still discriminates. It's a numerical fix, not a deep idea &mdash; but leave it out and training fails.</p>
+    </div>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>Self-attention: score every token against every other by dot product, scale and softmax those into weights, then output the weighted blend.</p>
+      <p>A word's representation stops being fixed &mdash; it becomes a function of the company it keeps.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">In the example, <code>bank</code> gave itself 0.56 &mdash; more than half. Is attention mostly doing nothing?</p>
+      <details><summary>Show answer</summary>
+        <div class="ans">No. Keeping most of yourself is <strong>correct</strong> &mdash; you're still that word. The 0.31 taken from <code>river</code> was enough to flip water from 1.60 to 1.73 and money from 1.60 to 0.93. A minority share is all it takes to disambiguate.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="topic" id="s4">
+  <div class="topic-head">
+    <div class="num">04</div>
+    <h2 class="topic-title">Why there are many attentions, not one</h2>
+    <div class="item-name">Multi-head attention purpose</div>
+  </div>
+  <div class="body">
+
+    <div class="step">See it</div>
+    <p>One set of weights produces one blend. But a token usually needs several unrelated things at once:</p>
+
+    <div class="showcase"><pre>"The keys to the cabinet <span class="hl">were</span> on the table."
+
+to get "<span class="hl">were</span>" right, you need:
+  <span class="out">which noun is the subject</span>  →  look at "keys"    <span class="dim">(not "cabinet")</span>
+  <span class="out">what tense is this</span>          →  look at the wider sentence
+  <span class="out">what does it connect to</span>     →  look at "on the table"
+
+<span class="hl">One row of weights cannot point three places at once.</span></pre></div>
+
+    <div class="step">Words</div>
+    <dl class="words">
+      <div><dt>head</dt><dd>One complete attention calculation with its own weights. A model runs many side by side.</dd></div>
+      <div><dt>multi-head attention</dt><dd>Running <em>H</em> heads in parallel over the same tokens and joining the results.</dd></div>
+    </dl>
+
+    <div class="step">Walk it</div>
+    <p>Rather than one attention over all 4,096 dimensions, split into (say) 32 heads of 128 dimensions each. Every head does the full score-soften-mix on its own slice, and the outputs are stitched back together.</p>
+    <p>Because each head has its own weights, each is free to learn a different notion of &ldquo;relevant.&rdquo; When people inspect trained models they find heads that track grammatical subjects, heads that match quotes to speakers, heads that mostly look at the previous token.</p>
+    <p>Note what this doesn't cost: 32 heads of 128 dims is the same total width as 1 head of 4,096. You get several relationships for roughly the price of one.</p>
+
+    <div class="gotcha">
+      <b>Don't over-read the specialisation</b>
+      <p>&ldquo;This head does grammar&rdquo; is a useful story, not a guarantee. Heads are found by gradient descent, not assigned. Many do something no one can name, and pruning a supposedly-critical head often changes little.</p>
+    </div>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>One head produces one blend, so it can capture one kind of relationship. Multi-head attention runs many in parallel over slices of the same vector, letting a token gather several different things at once.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">Why split into 32 heads of 128 rather than run 32 full-width ones?</p>
+      <details><summary>Show answer</summary>
+        <div class="ans">Cost. 32 heads &times; 128 dims is the <strong>same total work</strong> as one head at 4,096. Thirty-two full-width heads would be 32&times; the compute for a benefit nobody has shown you need. The split buys variety for free.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="topic" id="s5">
+  <div class="topic-head">
+    <div class="num">05</div>
+    <h2 class="topic-title">Three ways to wire it up</h2>
+    <div class="item-name">Encoder-only vs Decoder-only vs Encoder-Decoder</div>
+  </div>
+  <div class="body">
+
+    <div class="step">See it</div>
+    <p>The only structural difference between the three families is <strong>which tokens each token is allowed to look at</strong>. Real weight matrices from the same calculation as &sect;3:</p>
+
+    <div class="showcase"><pre><span class="out">EVERYONE SEES EVERYONE</span>        <span class="hl">ONLY LOOK LEFT</span>
+       the  riv  bnk  fld             the  riv  bnk  fld
+ the  0.24 0.25 0.25 0.25       the  1.00  —    —    —
+ riv  0.15 0.30 0.27 0.28       riv  0.34 0.66  —    —
+ bnk  0.16 0.29 0.27 0.28       bnk  0.22 0.40 0.38  —
+ fld  0.15 0.29 0.27 0.29       fld  0.15 0.29 0.27 0.29
+
+ <span class="dim">an encoder</span>                       <span class="dim">a decoder</span></pre></div>
+    <p class="caption-note">Real softmax output. The dashes are positions blocked before the softmax, so the remaining weights in each row still add to 1.</p>
+
+    <div class="step">Words</div>
+    <dl class="words">
+      <div><dt>encoder</dt><dd>Every token sees the whole sequence, both directions. Good for <em>understanding</em> text you already have.</dd></div>
+      <div><dt>decoder</dt><dd>Each token sees only itself and what came before. Necessary for <em>generating</em>, where the future doesn't exist yet.</dd></div>
+      <div><dt>causal mask</dt><dd>The block that enforces &ldquo;left only.&rdquo; Literally setting the forbidden scores to minus infinity before the softmax.</dd></div>
+    </dl>
+
+    <div class="step">Walk it</div>
+    <p>Look at the first row of each. In the encoder, <code>the</code> already knows about <code>flooded</code>. In the decoder it can't &mdash; when the model was learning to produce token 1, token 4 hadn't been written.</p>
+    <p>That gives three families:</p>
+
+    <div class="tbl-hold">
+    <table>
+      <thead><tr><th>Family</th><th>Sees</th><th>Good at</th><th>Examples</th></tr></thead>
+      <tbody>
+        <tr><td>Encoder-only</td><td>everything</td><td>classifying, embedding</td><td class="mono">BERT, e5</td></tr>
+        <tr><td>Decoder-only</td><td>left only</td><td>generating text</td><td class="mono">GPT, Claude, Llama</td></tr>
+        <tr><td>Encoder-decoder</td><td>both, in two stacks</td><td>fixed input → output</td><td class="mono">T5, BART</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>This is the &sect;1 split again, seen from underneath. Representation models are encoders; generative models are decoders. The mask is the mechanism.</p>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>Encoder, decoder and encoder-decoder differ by which positions attention is allowed to reach. Everything else &mdash; the layers, the maths &mdash; is the same.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">Why can't a generative model just use an encoder and see everything?</p>
+      <details><summary>Show answer</summary>
+        <div class="ans">Because during training it would <strong>see the answer</strong>. Predicting token 5 while able to look at token 5 is not a task &mdash; it's copying, and it teaches nothing usable at generation time, when nothing to the right exists.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="topic" id="s6">
+  <div class="topic-head">
+    <div class="num">06</div>
+    <h2 class="topic-title">Why almost every LLM is decoder-only</h2>
+    <div class="item-name">Why decoder-only models dominate LLMs</div>
+  </div>
+  <div class="body">
+
+    <div class="step">See it</div>
+    <p>Take one 512-token passage and count how many training signals each design squeezes out of it:</p>
+
+    <div class="showcase"><pre>decoder-only — every position predicts the next
+  <span class="out">511 predictions from one passage</span>
+
+encoder-style — hide about 15% and predict those
+  <span class="hl">~76 predictions from the same passage</span>
+
+  <span class="dim">6.7× more learning per token of text you own</span></pre></div>
+    <p class="caption-note">Computed: 511 vs 512 &times; 0.15. The 15% figure is BERT's masking rate.</p>
+
+    <div class="step">Walk it</div>
+    <p>Three reasons, in the order they matter.</p>
+    <p><strong>More signal per token.</strong> The numbers above. When text is the scarce resource, 6.7&times; is decisive.</p>
+    <p><strong>One design does every job.</strong> Any task can be phrased as text completion &mdash; classify, translate, summarise. An encoder needs a task-specific head bolted on; a decoder just needs a different prompt.</p>
+    <p><strong>Simplicity scales.</strong> One stack, one objective, one mask. Fewer moving parts to tune when a training run costs eight figures.</p>
+
+    <div class="gotcha">
+      <b>Not &ldquo;better,&rdquo; just better-suited</b>
+      <p>Encoders still win where they fit. For search and classification, a small encoder beats a large decoder at a fraction of the cost &mdash; which is exactly the two-model split from &sect;1.</p>
+      <p>Decoder-only dominates <em>general-purpose</em> models. It didn't win everywhere.</p>
+    </div>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>Decoder-only won because it extracts far more training signal per token, handles every task through one interface, and stays simple enough to scale.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">Why does &ldquo;more signal per token&rdquo; matter so much?</p>
+      <details><summary>Show answer</summary>
+        <div class="ans">Because <strong>high-quality text is finite</strong>. Compute you can buy; a bigger internet you cannot. Getting 6.7&times; the learning from the same corpus is worth more than any architectural elegance.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="topic" id="s7">
+  <div class="topic-head">
+    <div class="num">07</div>
+    <h2 class="topic-title">Order, position, and how much fits</h2>
+    <div class="item-name">Context window &amp; positional encoding</div>
+  </div>
+  <div class="body">
+
+    <div class="step">See it</div>
+    <p>Run attention on two sentences that mean opposite things, and look at the vector it produces for <code>dog</code>:</p>
+
+    <div class="showcase"><pre>"dog bites man"  → "dog" comes out as  <span class="out">[1.74, 0.55, 1.16, 0.00]</span>
+"man bites dog"  → "dog" comes out as  <span class="out">[1.74, 0.55, 1.16, 0.00]</span>
+
+                                        <span class="hl">byte-for-byte identical</span></pre></div>
+    <p class="caption-note">Real output. Attention is a weighted sum, and addition doesn't care about order.</p>
+
+    <p>Attention on its own is <strong>completely blind to word order</strong>. Position has to be added separately, or the model can't tell who bit whom.</p>
+
+    <div class="step">Words</div>
+    <dl class="words">
+      <div><dt>positional encoding</dt><dd>Extra numbers added to each token that encode <em>where</em> it is. Position 1 gets a different pattern from position 2.</dd></div>
+      <div><dt>context window</dt><dd>The most tokens a model can attend over at once. Everything outside it does not exist to the model.</dd></div>
+    </dl>
+
+    <div class="step">Walk it</div>
+    <p>The original fix was to add a fixed wave pattern to each token &mdash; different frequencies, so every position gets a unique fingerprint:</p>
+
+    <div class="showcase"><pre>position   0:  +0.000 +1.000 +0.000 +1.000
+position   1:  +0.841 +0.540 +0.100 +0.995
+position   2:  +0.909 -0.416 +0.199 +0.980
+position  50:  -0.262 +0.965 -0.959 +0.284</pre></div>
+    <p class="caption-note">Real sinusoidal values. Modern models mostly use a rotation-based variant (RoPE), but the job is the same.</p>
+
+    <div class="gotcha">
+      <b>Why context windows cost so much</b>
+      <p>Every token attends to every token, so the work grows with the <strong>square</strong> of the length. Double the context and attention gets four times more expensive; ten times the context is a hundred times the attention cost.</p>
+      <p>That quadratic is why long context was hard for years, and why a million-token window is an engineering achievement rather than a bigger number in a config file.</p>
+    </div>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>Attention ignores order, so position is added to each token explicitly. The context window is how far attention can reach &mdash; and its cost grows quadratically, not linearly.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">Going from 8k to 128k context is 16&times; the tokens. Roughly what happens to attention cost?</p>
+      <details><summary>Show answer</summary>
+        <div class="ans">About <strong>256&times;</strong> &mdash; 16 squared. That gap between 16&times; the text and 256&times; the work is why long-context models are priced the way they are, and why cutting what you send matters more than it looks.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="topic" id="s8">
+  <div class="topic-head">
+    <div class="num">08</div>
+    <h2 class="topic-title">The KV cache</h2>
+    <div class="item-name">KV cache intuition (important for engineering)</div>
+  </div>
+  <div class="body">
+
+    <div class="step">See it</div>
+    <p>From &sect;1: generating runs the model once per token, on everything written so far. Count the work for a 1,000-token answer:</p>
+
+    <div class="showcase"><pre>without caching — redo the whole thing each step
+  step 1: 1 token   step 2: 2 tokens   …   step 1000: 1000
+  total = <span class="hl">500,500 token-steps</span>
+
+with caching — keep what you already computed
+  total = <span class="out">1,000 token-steps</span>
+
+  <span class="dim">500× less work, for exactly the same output</span></pre></div>
+    <p class="caption-note">Computed: 1000&times;1001/2 versus 1000.</p>
+
+    <div class="step">Words</div>
+    <dl class="words">
+      <div><dt>KV cache</dt><dd>Stored intermediate values for tokens already processed, so each one is computed once instead of once per subsequent step.</dd></div>
+      <div><dt>prefill</dt><dd>Processing your prompt. Parallel, so fast &mdash; this is time-to-first-token.</dd></div>
+      <div><dt>decode</dt><dd>Generating each new token. Serial, one pass each &mdash; this is the rest of the wait.</dd></div>
+    </dl>
+
+    <div class="step">Walk it</div>
+    <p>When token 900 attends to token 3, the values it needs from token 3 are the same ones token 899 needed. Nothing about token 3 changed. So keep them.</p>
+    <p>Which converts a quadratic amount of work into a linear one &mdash; and buys it with memory:</p>
+
+    <div class="showcase"><pre>per token:      2 (keys and values) × 32 layers × 1024 × 2 bytes
+              = <span class="hl">128 KiB per token</span>
+
+  1,000 tokens  →   0.12 GiB
+  8,192 tokens  →   <span class="hl">1.00 GiB</span>
+128,000 tokens  →  <span class="hl">15.62 GiB</span>   <span class="dim">← for ONE conversation</span></pre></div>
+    <p class="caption-note">Computed for an 8B-class model. Sizes vary, the shape doesn't.</p>
+
+    <p>That number explains a lot of things you'll otherwise find mysterious. Why long conversations get expensive rather than just slow. Why a server handles far fewer concurrent long chats than short ones. Why providers charge separately for input and output tokens &mdash; prefill and decode are genuinely different operations on the hardware.</p>
+
+    <div class="gotcha">
+      <b>The cache is per conversation, and it is not free</b>
+      <p>Every simultaneous conversation needs its own. Serving 100 users at 8k context is <strong>100 GiB</strong> of cache before the model weights. This, not the weights, is usually what limits how many users a GPU can serve.</p>
+    </div>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>The KV cache stores each token's attention values once instead of recomputing them every step &mdash; trading memory for a roughly 500&times; reduction in work on a long answer.</p>
+      <p>It's why generation is memory-bound rather than compute-bound, and why context length shows up on your bill twice.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">Your chat app slows down as a conversation goes on, even though replies stay short. Why?</p>
+      <details><summary>Show answer</summary>
+        <div class="ans">Every new token attends over the <strong>whole history</strong>, which keeps growing, and the cache grows with it &mdash; 128 KiB per token. The replies aren't longer; each token is doing more work and touching more memory. Trimming or summarising history is the fix.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>LLM 101 &middot; &sect;2</span>
+  <span>See it &rarr; Words &rarr; Walk it &rarr; The rule</span>
+  <span>Every number on this page was computed</span>
+</footer>
+
+</div>
+
+</body>
+</html>

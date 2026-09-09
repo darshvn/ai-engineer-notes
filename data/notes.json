@@ -7,6 +7,14 @@
       "path": "notes/llm-101/01-what-is-a-large-language-model",
       "track": "ai-engineer-track",
       "added": "2026-09-09"
+    },
+    {
+      "topic": "llm-101",
+      "section": 2,
+      "title": "How the Machine Is Built",
+      "path": "notes/llm-101/02-transformer-architecture",
+      "track": "ai-engineer-track",
+      "added": "2026-09-10"
     }
   ]
 }
