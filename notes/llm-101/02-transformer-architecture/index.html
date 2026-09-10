@@ -748,179 +748,78 @@ d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch
 
     <div class="step">The setup</div>
     <div class="premise">
-      <div class="premise-row"><span class="pk">Where we are</span><span class="pv">Section 02 showed the problem: a word's meaning depends on the words around it. <code>bank</code> means one thing next to <code>river</code> and another next to <code>savings</code>. This section is the exact calculation that lets a model act on that.</span></div>
-      <div class="premise-row"><span class="pk">What we have</span><span class="pv">The sentence <code>the river bank</code>, with each word stored as a short list of numbers.</span></div>
-      <div class="premise-row"><span class="pk">What we want</span><span class="pv">A new version of <code>bank</code> whose numbers say <em>river</em> bank rather than <em>savings</em> bank.</span></div>
+      <div class="premise-row"><span class="pk">Where we are</span><span class="pv">Section 02: a word's meaning depends on the words around it.</span></div>
+      <div class="premise-row"><span class="pk">What we have</span><span class="pv">The sentence <code>the river bank</code>, each word stored as a list of numbers (its embedding).</span></div>
+      <div class="premise-row"><span class="pk">What we want</span><span class="pv">A version of <code>bank</code> whose numbers mean <em>river</em> bank.</span></div>
       <div class="premise-row"><span class="pk">How</span><span class="pv"><span class="plan"><span class="chip">1 &middot; Score</span><span class="arr">&rarr;</span><span class="chip">2 &middot; Shares</span><span class="arr">&rarr;</span><span class="chip">3 &middot; Mix</span></span></span></div>
     </div>
 
-    <div class="step">Words</div>
-    <dl class="words">
-      <div><dt>embedding</dt><dd>The list of numbers a model stores for each token &mdash; you met these at the end of the previous note. Real ones have hundreds or thousands of numbers. Ours have four.</dd></div>
-      <div><dt>dimension</dt><dd>One position in that list. Each dimension loosely captures one kind of meaning.</dd></div>
-    </dl>
+    <p>I've picked the numbers by hand so you can read them. A trained model learns its own, but the arithmetic is identical. Each word also has a fourth number, 0 for all three, so it's left out.</p>
 
-    <div class="step">The starting numbers</div>
-    <p>So that you can read them, I've picked these numbers by hand: the first dimension means <em>how water-related</em> a word is, the second <em>how money-related</em>, and the third is a catch-all that ordinary filler words score high on. A trained model learns its numbers instead &mdash; the arithmetic that follows is exactly the same either way.</p>
+    <div class="showcase"><pre>          water  money  generic
+the     [  0.3    0.3     2.5  ]   <span class="dim">filler word</span>
+river   [  2.6    0.0     0.5  ]   <span class="dim">very water</span>
+bank    [  <span class="hl">1.6    1.6</span>     0.8  ]   <span class="hl">equally both</span></pre></div>
 
-    <div class="showcase"><pre>          water  money  generic  unused
-the     [  0.3    0.3     2.5     0.0 ]   <span class="dim">a filler word</span>
-river   [  2.6    0.0     0.5     0.0 ]   <span class="dim">very water</span>
-bank    [  <span class="hl">1.6    1.6</span>     0.8     0.0 ]   <span class="hl">equally water and money</span></pre></div>
-
-    <p>Look at <code>bank</code>: water 1.6, money 1.6. On its own it is perfectly ambiguous, and by the end of step 3 that should have changed. The fourth number is 0 for every word, so it stays 0 throughout and I'll leave it out of the working.</p>
+    <p><code>bank</code> is equally water and money. By the end it shouldn't be.</p>
 
     <div class="step">Step 1 &middot; Score</div>
-    <p><strong>Question:</strong> how related is <code>bank</code> to each word in the sentence, itself included?</p>
-    <p><strong>Tool:</strong> a <em>dot product</em>. Line two lists up, multiply each pair of numbers, and add the results. When two words have big numbers in the same places, the total comes out big.</p>
+    <p>A <strong>dot product</strong> multiplies two lists position by position and adds the results. Big numbers in the same places give a big score.</p>
 
-    <div class="showcase"><pre>bank · river  =  1.6×2.6  +  1.6×0.0  +  0.8×0.5
-              =  4.16     +  0.00     +  0.40
-              =  <span class="hl">4.56</span></pre></div>
+    <div class="showcase"><pre>bank·the    =  1.6×0.3 + 1.6×0.3 + 0.8×2.5  =  2.96
+bank·river  =  1.6×2.6 + 1.6×0.0 + 0.8×0.5  =  <span class="hl">4.56</span>   <span class="dim">← shared water</span>
+bank·bank   =  1.6×1.6 + 1.6×1.6 + 0.8×0.8  =  5.76</pre></div>
 
-    <p>The same for the other two words:</p>
+    <p><code>river</code> outscores <code>the</code> because it shares <code>bank</code>'s water number.</p>
 
-    <div class="showcase"><pre>bank · the    =  0.48 + 0.48 + 2.00  =  2.96
-bank · river  =  4.16 + 0.00 + 0.40  =  <span class="hl">4.56</span>   <span class="dim">← both have big water numbers</span>
-bank · bank   =  2.56 + 2.56 + 0.64  =  5.76   <span class="dim">← a word always matches itself</span></pre></div>
+    <div class="step">Step 2 &middot; Shares</div>
+    <p>Divide each score by &radic;4 = 2 (four numbers per word), then apply <strong>softmax</strong>: raise <em>e</em> to each, divide by the total. The shares always add to 1.</p>
 
-    <p><strong>Result of step 1:</strong> three scores &mdash; 2.96, 4.56 and 5.76. <code>river</code> beats <code>the</code> because it shares <code>bank</code>'s large water number. But these are scores, not shares: they don't add up to anything in particular yet.</p>
-
-    <div class="step">Step 2 &middot; Turn scores into shares</div>
-    <p><strong>Question:</strong> how much of each word should the new <code>bank</code> take, as shares adding to exactly 100%?</p>
-    <p><strong>Tool:</strong> two small moves.</p>
-    <ol>
-      <li><strong>Divide by &radic;4, which is 2.</strong> Four is how many numbers each word has. This only keeps the numbers in a sensible range &mdash; the first gotcha below shows what goes wrong without it.</li>
-      <li><strong>Softmax.</strong> Raise <em>e</em> (about 2.718) to each number, then divide each result by their total. Bigger scores get disproportionately bigger shares, and the shares always add to 1.</li>
-    </ol>
-
-    <div class="showcase"><pre>         score   ÷ 2     e^x     share (e^x ÷ 31.98)
+    <div class="showcase"><pre>         score   ÷ 2     e^x     share
 the       2.96   1.48    4.39    0.137
 river     4.56   2.28    9.78    <span class="hl">0.306</span>
 bank      5.76   2.88   17.81    0.557
                         ─────    ─────
                         31.98    <span class="out">1.000</span></pre></div>
 
-    <p><strong>Result of step 2:</strong> the new <code>bank</code> will be made of 13.7% <code>the</code>, 30.6% <code>river</code> and 55.7% itself.</p>
+    <p>So the new <code>bank</code> is 13.7% <code>the</code>, 30.6% <code>river</code>, 55.7% itself.</p>
 
     <div class="step">Step 3 &middot; Mix</div>
-    <p><strong>Question:</strong> what are the new <code>bank</code>'s numbers?</p>
-    <p><strong>Tool:</strong> a weighted average. For each dimension, take 13.7% of <code>the</code>'s number, 30.6% of <code>river</code>'s and 55.7% of <code>bank</code>'s, and add them up.</p>
+    <p>Take a weighted average of the three words, one number at a time:</p>
 
-    <div class="showcase"><pre>water    =  0.137×0.3  +  0.306×2.6  +  0.557×1.6
-         =  0.041      +  0.795      +  0.891      =  <span class="hl">1.73</span>
+    <div class="showcase"><pre>water  =  0.137×0.3 + 0.306×2.6 + 0.557×1.6  =  <span class="hl">1.73</span>
+money  =  0.137×0.3 + 0.306×0.0 + 0.557×1.6  =  <span class="hl">0.93</span></pre></div>
 
-money    =  0.137×0.3  +  0.306×0.0  +  0.557×1.6
-         =  0.041      +  0.000      +  0.891      =  <span class="hl">0.93</span>
+    <p><code>river</code> added 0.795 to water and nothing to money. That's what tips it.</p>
 
-generic  =  0.137×2.5  +  0.306×0.5  +  0.557×0.8
-         =  0.343      +  0.153      +  0.446      =  0.94</pre></div>
+    <div class="step">Result</div>
 
-    <p>Notice where the difference comes from. <code>river</code>'s 30.6% share added <strong>0.795</strong> to water and <strong>nothing</strong> to money, because <code>river</code>'s money number is 0.</p>
+    <div class="showcase"><pre>                      water   money
+bank on its own        1.60    1.60   <span class="dim">ambiguous</span>
+"the river bank"       <span class="hl">1.73</span>    0.93   <span class="out">leans water</span>
+"the savings bank"     0.93    <span class="hl">1.73</span>   <span class="out">leans money</span></pre></div>
 
-    <div class="step">What changed</div>
+    <p>Same <code>bank</code>, same three steps. Only the neighbour changed: <code>savings</code> is <code>river</code> with its water and money numbers swapped.</p>
 
-    <div class="showcase"><pre>                  water   money
-bank, before       1.60    1.60     <span class="dim">ambiguous</span>
-bank, after        <span class="hl">1.73    0.93</span>     <span class="out">leans water: "river bank"</span></pre></div>
-
-    <p>That is the goal from the setup, reached. Now the real test: run the <strong>exact same three steps</strong> on <code>the savings bank</code>. <code>savings</code> is <code>[0.0, 2.6, 0.5]</code> &mdash; <code>river</code> with its water and money numbers swapped. Steps 1 and 2 give the same scores and shares, but step 3 now pulls in money instead of water:</p>
-
-    <div class="showcase"><pre>                        water   money
-"the river bank"         <span class="hl">1.73</span>    0.93
-"the savings bank"       0.93    <span class="hl">1.73</span>
-
-<span class="dim">same starting bank · same three steps · different neighbour</span></pre></div>
-  </div>
-
-  <figure>
-    <div class="svg-hold">
-    <svg viewBox="0 0 660 232" role="img" aria-label="The whole calculation for the water number of bank. Each of the three words runs left to right: its score from step one, its share from step two, and how much water it contributes in step three. The three contributions add to a new water value of 1.73.">
-      <defs>
-        <marker id="q1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
-        </marker>
-      </defs>
-
-      <g font-family="'IBM Plex Mono', monospace" font-size="11" letter-spacing="1.1" fill="currentColor" opacity="0.55">
-        <text x="20" y="24">WORD</text>
-        <text x="150" y="24" text-anchor="middle">1 · SCORE</text>
-        <text x="282" y="24" text-anchor="middle">2 · SHARE</text>
-        <text x="454" y="24" text-anchor="middle">3 · WATER TAKEN</text>
-      </g>
-
-      <!-- the -->
-      <text x="20" y="65" font-family="'IBM Plex Mono', monospace" font-size="12.5" fill="currentColor">the</text>
-      <rect x="110" y="46" width="80" height="28" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
-      <text x="150" y="65" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">2.96</text>
-      <line x1="194" y1="60" x2="236" y2="60" stroke="currentColor" stroke-width="1.2" opacity="0.6" marker-end="url(#q1)"/>
-      <rect x="240" y="46" width="84" height="28" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
-      <text x="282" y="65" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">0.137</text>
-      <line x1="328" y1="60" x2="368" y2="60" stroke="currentColor" stroke-width="1.2" opacity="0.6" marker-end="url(#q1)"/>
-      <rect x="372" y="46" width="164" height="28" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
-      <text x="454" y="65" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor">0.137 × 0.3 = 0.041</text>
-
-      <!-- river -->
-      <text x="20" y="105" font-family="'IBM Plex Mono', monospace" font-size="12.5" font-weight="600" fill="var(--signal)">river</text>
-      <rect x="110" y="86" width="80" height="28" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.5"/>
-      <text x="150" y="105" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--signal)">4.56</text>
-      <line x1="194" y1="100" x2="236" y2="100" stroke="currentColor" stroke-width="1.2" opacity="0.6" marker-end="url(#q1)"/>
-      <rect x="240" y="86" width="84" height="28" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.5"/>
-      <text x="282" y="105" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="var(--signal)">0.306</text>
-      <line x1="328" y1="100" x2="368" y2="100" stroke="currentColor" stroke-width="1.2" opacity="0.6" marker-end="url(#q1)"/>
-      <rect x="372" y="86" width="164" height="28" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.5"/>
-      <text x="454" y="105" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--signal)">0.306 × 2.6 = 0.795</text>
-
-      <!-- bank -->
-      <text x="20" y="145" font-family="'IBM Plex Mono', monospace" font-size="12.5" fill="currentColor">bank</text>
-      <rect x="110" y="126" width="80" height="28" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
-      <text x="150" y="145" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">5.76</text>
-      <line x1="194" y1="140" x2="236" y2="140" stroke="currentColor" stroke-width="1.2" opacity="0.6" marker-end="url(#q1)"/>
-      <rect x="240" y="126" width="84" height="28" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
-      <text x="282" y="145" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12" fill="currentColor">0.557</text>
-      <line x1="328" y1="140" x2="368" y2="140" stroke="currentColor" stroke-width="1.2" opacity="0.6" marker-end="url(#q1)"/>
-      <rect x="372" y="126" width="164" height="28" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
-      <text x="454" y="145" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor">0.557 × 1.6 = 0.891</text>
-
-      <!-- total -->
-      <line x1="372" y1="166" x2="536" y2="166" stroke="currentColor" stroke-width="1.2" opacity="0.5"/>
-      <rect x="372" y="174" width="164" height="32" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="1.6"/>
-      <text x="454" y="195" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="12.5" font-weight="600" fill="var(--accent)">water = 1.73</text>
-      <text x="546" y="195" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--accent)">← new bank</text>
-
-      <text x="330" y="226" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="currentColor" opacity="0.6">money works the same way: 0.041 + 0.000 + 0.891 = 0.93</text>
-    </svg>
-    </div>
-    <figcaption>The whole calculation in one picture, and every number in it appears in the working above. Read across a row to follow one word through all three steps. The highlighted row is <span class="mono">river</span> &mdash; the neighbour whose share tips <span class="mono">bank</span> towards water.</figcaption>
-  </figure>
-
-  <div class="body">
     <div class="gotcha">
-      <b>Why step 2 divides by &radic;4</b>
-      <p>Softmax exaggerates differences. Hand it large scores and it gives nearly everything to the top one &mdash; the word stops blending and just copies. Real shares for <code>bank</code>:</p>
-      <div class="showcase" style="margin:10px 0 0"><pre>                      the     river   bank
-divide by √4         0.137   0.306   0.557   <span class="out">← a real blend</span>
-skip the divide      0.045   0.221   0.734   <span class="dim">← already lopsided</span>
-scores 10× bigger    0.000   0.002   0.998   <span class="hl">← just copies itself</span></pre></div>
-      <p style="margin-top:12px">Real models have hundreds of numbers per word, so their scores come out large. Dividing by the square root of that count keeps softmax in the range where it still blends.</p>
+      <b>Why divide by &radic;4</b>
+      <p>Softmax exaggerates gaps. Skip the divide and <code>bank</code>'s shares become 0.045 / 0.221 / 0.734. Make the scores ten times bigger and they're 0.000 / 0.002 / 0.998 &mdash; the word stops blending and just copies itself. Real models have hundreds of numbers per word, so it matters even more there.</p>
     </div>
 
     <div class="gotcha">
-      <b>What a real model adds: query, key and value</b>
-      <p>In this example each word used its own numbers for three jobs &mdash; asking the question in step 1, being compared against in step 1, and being mixed in step 3. A real model first passes every word through three separate learned transformations for those jobs, called the <strong>query</strong> (what I'm looking for), the <strong>key</strong> (what I can be matched on) and the <strong>value</strong> (what I contribute).</p>
-      <p>That lets a word be <em>found</em> for one reason and <em>contribute</em> something different. The three steps don't change: score queries against keys, turn the scores into shares, mix the values. Whenever you see Q, K and V in other material, this is what they mean.</p>
+      <b>Query, key, value</b>
+      <p>Here each word used its own numbers for everything. A real model first makes three learned versions of each word: a <strong>query</strong> to score with, a <strong>key</strong> to be scored against, and a <strong>value</strong> to mix in. The three steps don't change. That's all Q, K and V mean.</p>
     </div>
 
     <div class="step rule-step">The rule</div>
     <div class="rule">
-      <p>Self-attention rebuilds each word from the words around it in three steps: <strong>score</strong> how related each word is (a dot product), <strong>turn the scores into shares</strong> that add to 1 (divide by &radic;d, then softmax), and <strong>mix</strong> the words' numbers using those shares.</p>
-      <p>A word's numbers stop being fixed. They become a blend of the sentence, weighted by relevance.</p>
+      <p>Self-attention rebuilds each word from its neighbours: <strong>score</strong> them with dot products, <strong>turn the scores into shares</strong> with softmax, then <strong>mix</strong> their numbers by those shares.</p>
     </div>
 
     <div class="check">
       <p class="q">Why did <code>bank</code> take 30.6% from <code>river</code> but only 13.7% from <code>the</code>?</p>
       <details><summary>Show answer</summary>
-        <div class="ans">Because <code>river</code> <strong>scored higher in step 1</strong> &mdash; 4.56 against 2.96. <code>bank</code> and <code>river</code> both have large water numbers, and those multiply to something big; <code>the</code>'s large number sits in the generic slot, where <code>bank</code> is small. Step 2's softmax then turns the higher score into a disproportionately bigger share.</div>
+        <div class="ans">Because <code>river</code> <strong>scored higher in step 1</strong> (4.56 against 2.96). It shares <code>bank</code>'s large water number, while <code>the</code>'s large number sits in the generic slot, where <code>bank</code> is small. Softmax then widens that gap.</div>
       </details>
     </div>
   </div>
