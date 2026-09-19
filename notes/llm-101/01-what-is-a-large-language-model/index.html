@@ -528,6 +528,37 @@ dl.words dd { margin: 0; font-size: 15.5px; }
   color: var(--muted); margin-top: 7px; line-height: 1.45;
 }
 .item-name::before { content: "covers: "; color: var(--signal); }
+
+/* ---- exercises: every section ends with something to run -------------- */
+.step.do-step { color: var(--accent); }
+.step.do-step::after { background: var(--accent); opacity: 0.35; }
+.exercise {
+  border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+  background: var(--surface); padding: 14px 20px 16px; margin: 10px 0 8px;
+}
+.exercise > p { margin: 10px 0; font-size: 15.5px; }
+.exercise .ex-file { font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+.exercise .ex-file a { color: var(--accent); }
+.exercise details { margin: 8px 0; }
+.exercise summary {
+  cursor: pointer; list-style: none; display: inline-block;
+  font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--accent); font-weight: 600;
+}
+.exercise summary::-webkit-details-marker { display: none; }
+.exercise summary::before { content: "\25B8  "; }
+.exercise details[open] > summary::before { content: "\25BE  "; }
+.exercise summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.exercise .showcase { margin: 8px 0 4px; }
+.exercise .ex-ans { font-size: 15px; color: var(--muted); margin: 8px 0 0; }
+.exercise .ex-ans strong { color: var(--ink); }
+.exercise .ex-note { font-size: 14.5px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 10px; margin-top: 12px; }
+.exercise .ex-note b { color: var(--signal); font-weight: 600; }
+.run-setup { margin: 22px 0 0; padding: 18px 22px; border: 1px solid var(--rule); background: var(--surface); }
+.run-setup h2 { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 10px; color: var(--accent); font-weight: 600; }
+.run-setup p { margin: 0 0 10px; font-size: 15.5px; max-width: 64ch; }
+.run-setup a { color: var(--accent); }
+.run-setup pre { font-family: var(--f-mono); font-size: 13px; background: var(--bg); border: 1px solid var(--rule); padding: 12px 14px; margin: 0 0 10px; overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -585,6 +616,16 @@ d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch
   <h2>How to read this</h2>
   <p>Every section runs in the same four steps: <strong>see a real example</strong>, <strong>get the words</strong> you need for it, <strong>walk through it</strong>, then <strong>state the rule</strong> it demonstrates. The rule comes last on purpose &mdash; it only means anything once you've seen the thing it describes.</p>
   <p>There's one question at the end of each section with the answer folded away. Answer it before you open it. If you can't, re-read that section rather than moving on &mdash; each one is used by the next.</p>
+</div>
+
+
+<div class="run-setup">
+  <h2>Running the exercises</h2>
+  <p>Every section ends with a short script to run. Predict what it will print before you run it &mdash; the gap between your guess and the real output is where the learning is. The scripts live in <a href="https://github.com/darshvn/ai-engineer-notes/tree/main/exercises"><code>exercises/</code></a>.</p>
+  <pre>cd ~/Downloads/ai-engineer-notes/exercises
+source .venv/bin/activate
+python llm-101/01/01_next_token_table.py</pre>
+  <p>On another machine: create a Python 3.11 environment and run <code>pip install -r requirements.txt</code>. The first run of a GPT-2 or embedding exercise downloads the model once (about 550 MB and 90 MB).</p>
 </div>
 
 <nav class="contents">
@@ -699,6 +740,46 @@ d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/01/01_next_token_table.py">exercises/llm-101/01/01_next_token_table.py</a></p>
+        <p><strong>Predict first:</strong> what will the top next token be after <code>"The capital of France is"</code>, and roughly how sure will the model be?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 01: see the table a language model actually outputs.
+# Predict first: what will the top next token be after &quot;The capital of France is&quot;?
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+tok = AutoTokenizer.from_pretrained(&quot;gpt2&quot;, clean_up_tokenization_spaces=True)
+model = AutoModelForCausalLM.from_pretrained(&quot;gpt2&quot;)
+
+text = &quot;The capital of France is&quot;
+ids = tok(text, return_tensors=&quot;pt&quot;).input_ids
+with torch.no_grad():
+    scores = model(ids).logits[0, -1]      # one score for every possible next token
+table = torch.softmax(scores, dim=-1)      # scores -&gt; probabilities that add to 1
+
+print(f&quot;The table has {len(table):,} rows and they add up to {table.sum():.4f}\n&quot;)
+top = torch.topk(table, 8)
+for p, i in zip(top.values, top.indices):
+    print(f&quot;  {tok.decode(i)!r:14} {p:.3f}&quot;)
+
+# Then try: change `text` to &quot;The capital of Japan is&quot;, then to &quot;I love eating&quot;.</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>The table has 50,257 rows and they add up to 1.0000
+
+  &#x27; the&#x27;         0.085
+  &#x27; now&#x27;         0.048
+  &#x27; a&#x27;           0.046
+  &#x27; France&#x27;      0.032
+  &#x27; Paris&#x27;       0.032
+  &#x27; in&#x27;          0.027
+  &#x27; also&#x27;        0.026
+  &#x27; not&#x27;         0.024</pre></div><p class="ex-ans">A real table: 50,257 rows adding to exactly 1. The top guess is <code>' the'</code> at 0.085, with <code>' Paris'</code> only fifth at 0.032.</p></details>
+        <p><strong>Then try:</strong> change <code>text</code> to <code>"The capital of Japan is"</code>, then to <code>"I love eating"</code>.</p>
+        <details><summary>What happens</summary><p class="ex-ans">Japan: <code>' the'</code> 0.094, then <strong><code>' Tokyo'</code> 0.067</strong>. &ldquo;I love eating&rdquo;: <code>','</code> 0.064, <code>' and'</code> 0.060, <code>'.'</code> 0.049 &mdash; when many continuations are reasonable, the table spreads thin and no row is large.</p></details>
+        <p class="ex-note"><b>Worth knowing.</b> GPT-2 is small and from 2019. The 0.87 for Paris earlier in the note was labelled illustrative; a modern large model does put most of its probability there. The shape of the output is the same either way &mdash; only how confident it is changes.</p>
+      </div>
+    </div>
 </section>
 
 <!-- ============================ 2 ============================ -->
@@ -759,6 +840,57 @@ model says          truth is " mat"        score
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/01/02_loss.py">exercises/llm-101/01/02_loss.py</a></p>
+        <p><strong>Predict first:</strong> which sentence gets the higher total loss, and at which word does the loss jump?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 02: score how surprised a model is by each real next token.
+# Predict first: which sentence gets the higher total loss, and at which word?
+import math
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+tok = AutoTokenizer.from_pretrained(&quot;gpt2&quot;, clean_up_tokenization_spaces=True)
+model = AutoModelForCausalLM.from_pretrained(&quot;gpt2&quot;)
+
+for text in [&quot;The cat sat on the mat.&quot;, &quot;The cat sat on the thermodynamics.&quot;]:
+    ids = tok(text, return_tensors=&quot;pt&quot;).input_ids[0]
+    with torch.no_grad():
+        tables = torch.softmax(model(ids[None]).logits[0], dim=-1)
+    print(text)
+    total = 0.0
+    for pos in range(1, len(ids)):
+        p = tables[pos - 1, ids[pos]].item()   # probability given to the real next token
+        loss = -math.log(p)
+        total += loss
+        print(f&quot;   {tok.decode(ids[pos])!r:18} p = {p:.4f}   loss = {loss:.2f}&quot;)
+    print(f&quot;   total loss {total:.2f}\n&quot;)
+
+# Then try: add a sentence that is true but unusual, e.g. &quot;Paris is the capital of France.&quot;</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>The cat sat on the mat.
+   &#x27; cat&#x27;             p = 0.0001   loss = 9.20
+   &#x27; sat&#x27;             p = 0.0007   loss = 7.26
+   &#x27; on&#x27;              p = 0.2240   loss = 1.50
+   &#x27; the&#x27;             p = 0.4537   loss = 0.79
+   &#x27; mat&#x27;             p = 0.0040   loss = 5.51
+   &#x27;.&#x27;                p = 0.0631   loss = 2.76
+   total loss 27.02
+
+The cat sat on the thermodynamics.
+   &#x27; cat&#x27;             p = 0.0001   loss = 9.20
+   &#x27; sat&#x27;             p = 0.0007   loss = 7.26
+   &#x27; on&#x27;              p = 0.2240   loss = 1.50
+   &#x27; the&#x27;             p = 0.4537   loss = 0.79
+   &#x27; therm&#x27;           p = 0.0000   loss = 11.47
+   &#x27;odynamics&#x27;        p = 0.0000   loss = 10.82
+   &#x27;.&#x27;                p = 0.0026   loss = 5.96
+   total loss 46.99</pre></div><p class="ex-ans">The two sentences cost exactly the same until the last word: 27.02 total for <code>mat</code>, 46.99 for <code>thermodynamics</code>, which costs 11.47 + 10.82 because GPT-2 splits it into two tokens it never expected.</p></details>
+        <p><strong>Then try:</strong> replace the two sentences with <code>"Paris is the capital of France."</code></p>
+        <details><summary>What happens</summary><p class="ex-ans">Total <strong>16.56</strong>. The cheapest token is <code>' of'</code> after <code>capital</code> (p = 0.72, loss 0.32): the more predictable the next token, the less it costs.</p></details>
+        <p class="ex-note"><b>Worth knowing.</b> The first real token always costs a lot (<code>' cat'</code> is 9.20) because almost anything can follow <code>"The"</code>. High loss there isn't a mistake, it's uncertainty.</p>
+      </div>
+    </div>
 </section>
 
 <!-- ============================ 3 ============================ -->
@@ -861,6 +993,31 @@ model says          truth is " mat"        score
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/01/03_passes.py">exercises/llm-101/01/03_passes.py</a></p>
+        <p><strong>Predict first:</strong> how many passes of computation does each answer buy the model?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 03: a model gets one pass of computation per token it writes.
+# Predict first: how many passes does each answer buy the model?
+import tiktoken
+
+enc = tiktoken.get_encoding(&quot;cl100k_base&quot;)
+answers = {
+    &quot;straight to it&quot;: &quot;408&quot;,
+    &quot;step by step&quot;: &quot;17 × 20 = 340. 17 × 4 = 68. 340 + 68 = 408. The answer is 408.&quot;,
+}
+for name, answer in answers.items():
+    n = len(enc.encode(answer))
+    print(f&quot;{name:&lt;15} {n:&gt;3} tokens -&gt; {n} passes&quot;)
+
+# Then try: write your own step-by-step working for 23 × 47 and count its passes.</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>straight to it    1 tokens -&gt; 1 passes
+step by step     32 tokens -&gt; 32 passes</pre></div><p class="ex-ans"><strong>1</strong> pass for the bare answer against <strong>32</strong> for the worked one.</p></details>
+        <p><strong>Then try:</strong> write your own step-by-step working for 23 &times; 47 and count its passes.</p>
+        <details><summary>What happens</summary><p class="ex-ans">One way to write it &mdash; <code>23 × 40 = 920. 23 × 7 = 161. 920 + 161 = 1081. The answer is 1081.</code> &mdash; is <strong>34</strong> tokens, so 34 passes. (23 &times; 47 is 1081.)</p></details>
+      </div>
+    </div>
 </section>
 
 <!-- ============================ 4 ============================ -->
@@ -915,6 +1072,37 @@ model says          truth is " mat"        score
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/01/04_emergence.py">exercises/llm-101/01/04_emergence.py</a></p>
+        <p><strong>Predict first:</strong> at a per-digit accuracy of 0.85, how often is the whole 5-digit answer right?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 04: smooth improvement underneath, a cliff in the score on top.
+# Each digit is right with probability p, and p rises smoothly with model size.
+# A 5-digit answer only counts if all five digits are right, so the score is p**5.
+# Predict first: at p = 0.85, how often is the whole answer right?
+sizes = [&quot;1B&quot;, &quot;3B&quot;, &quot;7B&quot;, &quot;30B&quot;, &quot;70B&quot;, &quot;150B&quot;, &quot;400B&quot;]
+per_digit = [0.30, 0.45, 0.60, 0.75, 0.85, 0.93, 0.98]   # illustrative, rising smoothly
+
+digits = 5
+print(f&quot;{&#x27;size&#x27;:&lt;6}{&#x27;each digit&#x27;:&gt;11}{&#x27;whole answer&#x27;:&gt;14}&quot;)
+for size, p in zip(sizes, per_digit):
+    print(f&quot;{size:&lt;6}{p:&gt;11.2f}{p ** digits:&gt;14.1%}&quot;)
+
+# Then try: set digits = 10. Where does the jump move?</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>size   each digit  whole answer
+1B           0.30          0.2%
+3B           0.45          1.8%
+7B           0.60          7.8%
+30B          0.75         23.7%
+70B          0.85         44.4%
+150B         0.93         69.6%
+400B         0.98         90.4%</pre></div><p class="ex-ans">Only <strong>44.4%</strong>. Per-digit accuracy climbs steadily from 0.30 to 0.98, but the whole-answer score crawls from 0.2% to 7.8% and then shoots to 90.4%.</p></details>
+        <p><strong>Then try:</strong> set <code>digits = 10</code>.</p>
+        <details><summary>What happens</summary><p class="ex-ans">Now 0.85 per digit gives just <strong>19.7%</strong>, and the jump happens later: 48.4% at 150B, 81.7% at 400B. Same smooth progress underneath &mdash; a stricter test just moves the cliff.</p></details>
+        <p class="ex-note"><b>Worth knowing.</b> The sizes and per-digit numbers are made up to show the shape. The arithmetic (a whole answer is right with probability p to the power of the number of digits) is exact.</p>
+      </div>
+    </div>
 </section>
 
 <!-- ============================ 5 ============================ -->
@@ -967,6 +1155,52 @@ model says          truth is " mat"        score
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/01/05_task_specific.py">exercises/llm-101/01/05_task_specific.py</a></p>
+        <p><strong>Predict first:</strong> what will the model say about <code>"an absolute masterpiece"</code>?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 05: build a task-specific model from labelled examples.
+# Predict first: what will it say about &quot;an absolute masterpiece&quot;?
+import time
+from collections import Counter
+
+train = [
+    (&quot;loved it, great acting&quot;, &quot;pos&quot;), (&quot;wonderful and moving&quot;, &quot;pos&quot;),
+    (&quot;great fun, loved the ending&quot;, &quot;pos&quot;), (&quot;brilliant, wonderful cast&quot;, &quot;pos&quot;),
+    (&quot;boring and far too long&quot;, &quot;neg&quot;), (&quot;terrible plot, awful acting&quot;, &quot;neg&quot;),
+    (&quot;awful, boring, a waste&quot;, &quot;neg&quot;), (&quot;terrible ending, hated it&quot;, &quot;neg&quot;),
+]
+
+weights = Counter()                       # training: count which words go with which label
+for text, label in train:
+    for word in text.replace(&quot;,&quot;, &quot;&quot;).split():
+        weights[word] += 1 if label == &quot;pos&quot; else -1
+
+def classify(text):
+    score = sum(weights[w] for w in text.lower().replace(&quot;,&quot;, &quot;&quot;).split())
+    return &quot;pos&quot; if score &gt; 0 else &quot;neg&quot; if score &lt; 0 else &quot;no idea&quot;
+
+tests = [&quot;great acting, wonderful&quot;, &quot;boring and awful&quot;,
+         &quot;an absolute masterpiece&quot;, &quot;summarise this review for me&quot;]
+start = time.perf_counter()
+results = [classify(t) for t in tests]
+took = time.perf_counter() - start
+for t, r in zip(tests, results):
+    print(f&quot;  {t!r:32} -&gt; {r}&quot;)
+print(f&quot;\n{len(tests)} predictions in {took * 1e6:.0f} microseconds&quot;)
+
+# Then try: add (&quot;a masterpiece&quot;, &quot;pos&quot;) to train and run it again.</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>  &#x27;great acting, wonderful&#x27;        -&gt; pos
+  &#x27;boring and awful&#x27;               -&gt; neg
+  &#x27;an absolute masterpiece&#x27;        -&gt; no idea
+  &#x27;summarise this review for me&#x27;   -&gt; no idea
+
+4 predictions in 15 microseconds</pre></div><p class="ex-ans">It gets the two reviews made of words it trained on, and says <strong>no idea</strong> to &ldquo;masterpiece&rdquo; and to the summarise request. Four predictions took 13 microseconds.</p></details>
+        <p><strong>Then try:</strong> add <code>("a masterpiece", "pos")</code> to <code>train</code> and run it again.</p>
+        <details><summary>What happens</summary><p class="ex-ans">&ldquo;an absolute masterpiece&rdquo; now comes out <strong>pos</strong>. &ldquo;summarise this review&rdquo; is still <strong>no idea</strong> &mdash; more labels fixed a gap, but it will never do a different job. That is a task-specific model: fast, cheap, needs labels, does one thing.</p></details>
+      </div>
+    </div>
 </section>
 
 <!-- ============================ 6 ============================ -->
@@ -1068,6 +1302,36 @@ returns <span class="out">text</span>                 returns <span class="hl">n
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/01/06_embeddings.py">exercises/llm-101/01/06_embeddings.py</a></p>
+        <p><strong>Predict first:</strong> which sentence will be closest to <code>"How do I reset my password?"</code></p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 06: turn sentences into numbers and compare them by meaning.
+# Predict first: which sentence is closest to &quot;How do I reset my password?&quot;
+import numpy as np
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer(&quot;all-MiniLM-L6-v2&quot;, tokenizer_kwargs={&quot;clean_up_tokenization_spaces&quot;: True})
+sentences = [&quot;How do I reset my password?&quot;, &quot;I forgot my login&quot;, &quot;What time do you close?&quot;]
+vectors = model.encode(sentences, normalize_embeddings=True)
+
+print(f&quot;Each sentence becomes {vectors.shape[1]} numbers.&quot;)
+print(&quot;First five for sentence one:&quot;, np.round(vectors[0][:5], 3), &quot;\n&quot;)
+for sentence, v in zip(sentences, vectors):
+    print(f&quot;  {vectors[0] @ v:.3f}  {sentence}&quot;)    # 1.0 means identical meaning
+
+# Then try: add &quot;Can you help me get back into my account?&quot;. Where does it rank?</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>Each sentence becomes 384 numbers.
+First five for sentence one: [ 0.007 -0.063 -0.072 -0.032 -0.043] 
+
+  1.000  How do I reset my password?
+  0.611  I forgot my login
+  0.122  What time do you close?</pre></div><p class="ex-ans">Each sentence becomes 384 numbers. <code>I forgot my login</code> scores <strong>0.611</strong> and <code>What time do you close?</code> only <strong>0.122</strong>, even though the first shares no words with the question.</p></details>
+        <p><strong>Then try:</strong> add <code>"Can you help me get back into my account?"</code> to the list.</p>
+        <details><summary>What happens</summary><p class="ex-ans">It scores <strong>0.565</strong> &mdash; close behind &ldquo;I forgot my login&rdquo; and far above the closing-time question. Similar meaning, different words: exactly what keyword search misses and embeddings catch.</p></details>
+      </div>
+    </div>
 </section>
 
 <footer>

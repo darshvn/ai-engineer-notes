@@ -545,6 +545,37 @@ dl.words dd { margin: 0; font-size: 15.5px; }
   border-radius: 2px; white-space: nowrap; }
 .plan .arr { color: var(--muted); font-family: var(--f-mono); }
 @media (max-width: 620px) { .premise-row { grid-template-columns: 1fr; gap: 3px; } }
+
+/* ---- exercises: every section ends with something to run -------------- */
+.step.do-step { color: var(--accent); }
+.step.do-step::after { background: var(--accent); opacity: 0.35; }
+.exercise {
+  border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+  background: var(--surface); padding: 14px 20px 16px; margin: 10px 0 8px;
+}
+.exercise > p { margin: 10px 0; font-size: 15.5px; }
+.exercise .ex-file { font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+.exercise .ex-file a { color: var(--accent); }
+.exercise details { margin: 8px 0; }
+.exercise summary {
+  cursor: pointer; list-style: none; display: inline-block;
+  font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--accent); font-weight: 600;
+}
+.exercise summary::-webkit-details-marker { display: none; }
+.exercise summary::before { content: "\25B8  "; }
+.exercise details[open] > summary::before { content: "\25BE  "; }
+.exercise summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.exercise .showcase { margin: 8px 0 4px; }
+.exercise .ex-ans { font-size: 15px; color: var(--muted); margin: 8px 0 0; }
+.exercise .ex-ans strong { color: var(--ink); }
+.exercise .ex-note { font-size: 14.5px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 10px; margin-top: 12px; }
+.exercise .ex-note b { color: var(--signal); font-weight: 600; }
+.run-setup { margin: 22px 0 0; padding: 18px 22px; border: 1px solid var(--rule); background: var(--surface); }
+.run-setup h2 { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 10px; color: var(--accent); font-weight: 600; }
+.run-setup p { margin: 0 0 10px; font-size: 15.5px; max-width: 64ch; }
+.run-setup a { color: var(--accent); }
+.run-setup pre { font-family: var(--f-mono); font-size: 13px; background: var(--bg); border: 1px solid var(--rule); padding: 12px 14px; margin: 0 0 10px; overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -626,6 +657,16 @@ d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch
   <p>&sect;1 said a model turns text into a table of next-token probabilities. This is the part that explains <em>how</em>. It's also the section that lets you reason about speed and cost later, which is why it's worth the time.</p>
 </div>
 
+
+<div class="run-setup">
+  <h2>Running the exercises</h2>
+  <p>Every section ends with a short script to run. Predict what it will print before you run it &mdash; the gap between your guess and the real output is where the learning is. The scripts live in <a href="https://github.com/darshvn/ai-engineer-notes/tree/main/exercises"><code>exercises/</code></a>.</p>
+  <pre>cd ~/Downloads/ai-engineer-notes/exercises
+source .venv/bin/activate
+python llm-101/02/01_sequential_vs_parallel.py</pre>
+  <p>On another machine: create a Python 3.11 environment and run <code>pip install -r requirements.txt</code>. The first run of a GPT-2 or embedding exercise downloads the model once (about 550 MB and 90 MB).</p>
+</div>
+
 <nav class="contents">
   <h2>What's in here</h2>
   <ol>
@@ -691,6 +732,47 @@ d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/01_sequential_vs_parallel.py">exercises/llm-101/02/01_sequential_vs_parallel.py</a></p>
+        <p><strong>Predict first:</strong> how much faster is doing all 1,000 rows at once than one after another?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 01: the same multiplications, done one after another or all at once.
+# Predict first: how much faster is doing all 1,000 rows at once?
+import time
+import numpy as np
+
+rng = np.random.default_rng(0)
+n = 1000
+x = rng.standard_normal((n, 256))          # n tokens, 256 numbers each
+W = rng.standard_normal((256, 256)) / 16
+
+def one_after_another():                    # RNN-style: step i needs step i-1 first
+    h = np.zeros(256)
+    for i in range(n):
+        h = np.tanh(x[i] @ W + h)
+
+def all_at_once():                          # transformer-style: no step waits on another
+    np.tanh(x @ W)
+
+def best_of_5(f):                           # timings on a laptop are noisy, so keep the best run
+    runs = []
+    for _ in range(5):
+        start = time.perf_counter(); f(); runs.append(time.perf_counter() - start)
+    return min(runs)
+
+a, b = best_of_5(one_after_another), best_of_5(all_at_once)
+print(f&quot;one after another : {a * 1000:7.2f} ms&quot;)
+print(f&quot;all at once       : {b * 1000:7.2f} ms   ({a / b:.0f}x faster)&quot;)
+
+# Then try: set n = 4000. Which time grows faster?</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>one after another :   13.20 ms
+all at once       :    3.33 ms   (4x faster)</pre></div><p class="ex-ans">About <strong>4&ndash;5&times;</strong> on this 2016 MacBook (13.2 ms against 3.3 ms). Same multiplications; the only difference is whether each one waits for the last.</p></details>
+        <p><strong>Then try:</strong> rewrite <code>one_after_another</code> so it doesn't need the loop.</p>
+        <details><summary>What happens</summary><p class="ex-ans">You can't. Each <code>h</code> needs the previous <code>h</code>, so step 500 cannot start before step 499 finishes. That dependency, not the maths, is what stopped RNNs using a GPU.</p></details>
+        <p class="ex-note"><b>Worth knowing.</b> A laptop CPU shows only a modest, noisy gap &mdash; at 4,000 rows it nearly vanished here. The real difference shows up on a GPU, which runs thousands of independent multiplications at once but can't speed up a chain where each step waits.</p>
+      </div>
+    </div>
 </section>
 
 <!-- 2 -->
@@ -735,6 +817,52 @@ d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/02_what_it_attends_to.py">exercises/llm-101/02/02_what_it_attends_to.py</a></p>
+        <p><strong>Predict first:</strong> will <code>it</code> attend differently in the two sentences? They differ only in the last word, &ldquo;tired&rdquo; versus &ldquo;wide&rdquo;.</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 02: look inside a real model and see which words &quot;it&quot; pulls from.
+# Predict first: will &quot;it&quot; attend differently in the two sentences?
+# (They differ only in the last word: &quot;tired&quot; versus &quot;wide&quot;.)
+import torch
+from transformers import AutoModel, AutoTokenizer
+
+tok = AutoTokenizer.from_pretrained(&quot;gpt2&quot;, clean_up_tokenization_spaces=True)
+model = AutoModel.from_pretrained(&quot;gpt2&quot;, output_attentions=True, attn_implementation=&quot;eager&quot;)
+
+for text in [&quot;The animal didn&#x27;t cross the street because it was too tired&quot;,
+             &quot;The animal didn&#x27;t cross the street because it was too wide&quot;]:
+    ids = tok(text, return_tensors=&quot;pt&quot;).input_ids
+    words = [tok.decode(i).strip() for i in ids[0]]
+    look_from = words.index(&quot;it&quot;)
+    with torch.no_grad():
+        attn = torch.stack(model(ids).attentions)    # [layer, batch, head, from, to]
+    w = attn[:, 0, :, look_from, :].mean(dim=(0, 1))  # average over 12 layers x 12 heads
+    w[0] = 0                                           # drop the first token (see the gotcha)
+    w = w / w.sum()
+    print(text)
+    for i in torch.argsort(w, descending=True)[:4]:
+        print(f&quot;   {words[i]:&lt;8} {w[i]:.2f}&quot;)
+    print()
+
+# Then try: set look_from = len(words) - 1, so you measure from the last word instead.</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>The animal didn&#x27;t cross the street because it was too tired
+   because  0.31
+   it       0.19
+   animal   0.10
+   cross    0.10
+
+The animal didn&#x27;t cross the street because it was too wide
+   because  0.31
+   it       0.19
+   animal   0.10
+   cross    0.10</pre></div><p class="ex-ans"><strong>Identical</strong> in both: because 0.31, it 0.19, animal 0.10, cross 0.10. GPT-2 is a decoder, so at the word <code>it</code> it hasn't seen &ldquo;tired&rdquo; or &ldquo;wide&rdquo; yet (section 05). It can't use a later word there.</p></details>
+        <p><strong>Then try:</strong> set <code>look_from = len(words) - 1</code>, so you measure from the last word instead.</p>
+        <details><summary>What happens</summary><p class="ex-ans">Now the sentences differ, but attention mostly goes to nearby words: <code>too</code> 0.20, <code>tired</code> 0.18, <code>was</code> 0.12. Neither <code>animal</code> nor <code>street</code> makes the top four.</p></details>
+        <p class="ex-note"><b>Worth knowing.</b> Averaged attention weights are not a readable &ldquo;this refers to that&rdquo; arrow &mdash; what <code>it</code> means gets built up across 12 layers. The script also drops the first token: GPT-2 parks a lot of attention there as a default resting place, which would drown out everything else.</p>
+      </div>
+    </div>
 </section>
 
 <!-- 3 -->
@@ -823,6 +951,42 @@ bank on its own        1.60    1.60   <span class="dim">ambiguous</span>
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/03_self_attention.py">exercises/llm-101/02/03_self_attention.py</a></p>
+        <p><strong>Predict first:</strong> what will <code>bank</code>'s water and money numbers be afterwards?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 03: the three steps from the note, in ten lines.
+# Predict first: what will &quot;bank&quot;&#x27;s water and money numbers be afterwards?
+import numpy as np
+
+words = [&quot;the&quot;, &quot;river&quot;, &quot;bank&quot;]
+E = np.array([[0.3, 0.3, 2.5, 0.0],        # water, money, generic, unused
+              [2.6, 0.0, 0.5, 0.0],
+              [1.6, 1.6, 0.8, 0.0]])
+
+scores = E @ E[2]                          # 1. score every word against &quot;bank&quot;
+shares = np.exp(scores / np.sqrt(4))       # 2. divide by sqrt(4), then softmax
+shares /= shares.sum()
+new_bank = shares @ E                      # 3. mix the words by those shares
+
+for w, s, sh in zip(words, scores, shares):
+    print(f&quot;  {w:&lt;6} score {s:.2f}   share {sh:.3f}&quot;)
+print(f&quot;\nbank before: water {E[2, 0]:.2f}  money {E[2, 1]:.2f}&quot;)
+print(f&quot;bank after : water {new_bank[0]:.2f}  money {new_bank[1]:.2f}&quot;)
+
+# Then try: replace river with savings = [0.0, 2.6, 0.5, 0.0].
+# Then try: delete &quot;/ np.sqrt(4)&quot; and watch the shares.</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>  the    score 2.96   share 0.137
+  river  score 4.56   share 0.306
+  bank   score 5.76   share 0.557
+
+bank before: water 1.60  money 1.60
+bank after : water 1.73  money 0.93</pre></div><p class="ex-ans">The same shares as the worked example (0.137, 0.306, 0.557) and the same result: water <strong>1.73</strong>, money <strong>0.93</strong>.</p></details>
+        <p><strong>Then try:</strong> replace <code>river</code> with <code>savings = [0.0, 2.6, 0.5, 0.0]</code>. Then, separately, delete <code>/ np.sqrt(4)</code>.</p>
+        <details><summary>What happens</summary><p class="ex-ans">With savings: water <strong>0.93</strong>, money <strong>1.73</strong> &mdash; flipped, with identical shares. Without the divide: shares 0.045 / 0.221 / 0.734, and <code>bank</code> comes out water 1.76, money 1.19 &mdash; it keeps more of itself and blends less.</p></details>
+      </div>
+    </div>
 </section>
 
 <!-- 4 -->
@@ -874,6 +1038,40 @@ to get "<span class="hl">were</span>" right, you need:
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/04_two_heads.py">exercises/llm-101/02/04_two_heads.py</a></p>
+        <p><strong>Predict first:</strong> will both heads give <code>river</code> the same share?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 04: split the numbers into two heads and let each attend on its own.
+# Head A sees the first two numbers (water, money); head B sees the other two.
+# Predict first: will both heads give &quot;river&quot; the same share?
+import numpy as np
+
+words = [&quot;the&quot;, &quot;river&quot;, &quot;bank&quot;]
+E = np.array([[0.3, 0.3, 2.5, 0.0],
+              [2.6, 0.0, 0.5, 0.0],
+              [1.6, 1.6, 0.8, 0.0]])
+
+def shares_for_bank(part):
+    scores = part @ part[2] / np.sqrt(part.shape[1])
+    s = np.exp(scores - scores.max())
+    return s / s.sum()
+
+for name, cols in [(&quot;one big head&quot;, slice(0, 4)), (&quot;head A (meaning)&quot;, slice(0, 2)),
+                   (&quot;head B (generic)&quot;, slice(2, 4))]:
+    s = shares_for_bank(E[:, cols])
+    print(f&quot;{name:&lt;17} &quot; + &quot;  &quot;.join(f&quot;{w} {v:.2f}&quot; for w, v in zip(words, s)))
+
+# Then try: change &quot;the&quot; to [0.3, 2.5, 2.5, 0.0], giving it a large money number.
+# Which head notices?</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>one big head      the 0.14  river 0.31  bank 0.56
+head A (meaning)  the 0.03  river 0.33  bank 0.64
+head B (generic)  the 0.59  river 0.19  bank 0.22</pre></div><p class="ex-ans">No. Head A (water, money) gives <code>river</code> 0.33 and <code>the</code> almost nothing (0.03). Head B (generic) gives <code>the</code> 0.59. Same words, two different ideas of what's relevant.</p></details>
+        <p><strong>Then try:</strong> change <code>the</code> to <code>[0.3, 2.5, 2.5, 0.0]</code>, giving it a large money number.</p>
+        <details><summary>What happens</summary><p class="ex-ans">Head A's share for <code>the</code> jumps from 0.03 to <strong>0.30</strong>. Head B doesn't change at all (0.59, 0.19, 0.22), because it never sees the money number. Each head only notices what's in its own slice.</p></details>
+      </div>
+    </div>
 </section>
 
 <!-- 5 -->
@@ -934,6 +1132,47 @@ bank    0.14  0.31  0.56    bank    0.14  0.31  0.56
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/05_masks.py">exercises/llm-101/02/05_masks.py</a></p>
+        <p><strong>Predict first:</strong> what will the first row look like in the decoder?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 05: the only difference between an encoder and a decoder.
+# Predict first: what will the first row look like in the decoder?
+import numpy as np
+
+words = [&quot;the&quot;, &quot;river&quot;, &quot;bank&quot;]
+E = np.array([[0.3, 0.3, 2.5, 0.0], [2.6, 0.0, 0.5, 0.0], [1.6, 1.6, 0.8, 0.0]])
+scores = E @ E.T / np.sqrt(4)
+
+def softmax_rows(m):
+    e = np.exp(m - m.max(axis=1, keepdims=True))
+    return e / e.sum(axis=1, keepdims=True)
+
+encoder = softmax_rows(scores)
+masked = scores.copy()
+masked[np.triu_indices(3, k=1)] = -np.inf   # block every word from seeing later words
+decoder = softmax_rows(masked)
+
+for name, m in [(&quot;encoder: sees everything&quot;, encoder), (&quot;decoder: looks left only&quot;, decoder)]:
+    print(name)
+    for w, row in zip(words, m):
+        print(f&quot;   {w:&lt;6}&quot; + &quot;&quot;.join(f&quot;{v:7.2f}&quot; for v in row))
+
+# Then try: add a fourth word, &quot;flooded&quot; = [2.4, 0.0, 0.6, 0.0], and change the 3
+# in triu_indices to 4. Which rows still match between the two, and which stop?</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>encoder: sees everything
+   the      0.78   0.09   0.14
+   river    0.06   0.73   0.21
+   bank     0.14   0.31   0.56
+decoder: looks left only
+   the      1.00   0.00   0.00
+   river    0.08   0.92   0.00
+   bank     0.14   0.31   0.56</pre></div><p class="ex-ans"><code>1.00, 0.00, 0.00</code> &mdash; the first word can only see itself. The last row (<code>bank</code>) is the same in both, because the last word already sees everything to its left.</p></details>
+        <p><strong>Then try:</strong> add a fourth word, <code>"flooded" = [2.4, 0.0, 0.6, 0.0]</code>, and change the 3 in <code>triu_indices</code> to 4.</p>
+        <details><summary>What happens</summary><p class="ex-ans">Now only the <code>flooded</code> row matches (0.05, 0.44, 0.15, 0.36). <code>bank</code>'s row splits: the encoder gives it 0.21 of <code>flooded</code>, the decoder still can't see it. Only the last word is the same in both.</p></details>
+      </div>
+    </div>
 </section>
 
 <!-- 6 -->
@@ -981,6 +1220,35 @@ encoder-style — hide about 15% and predict those
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/06_training_signal.py">exercises/llm-101/02/06_training_signal.py</a></p>
+        <p><strong>Predict first:</strong> how many training signals does each design get from this 46-token passage?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 06: count how much a model learns from one passage.
+# Predict first: how many predictions does each design get from this text?
+import tiktoken
+
+text = (&quot;Attention lets every token look at every other token in the sentence, &quot;
+        &quot;decide how relevant each one is, and mix them into a new representation. &quot;
+        &quot;Stacking this many times, with ordinary layers in between, is what a &quot;
+        &quot;transformer is.&quot;)
+n = len(tiktoken.get_encoding(&quot;cl100k_base&quot;).encode(text))
+
+print(f&quot;passage: {n} tokens&quot;)
+print(f&quot;decoder-only, predict every next token : {n - 1} training signals&quot;)
+print(f&quot;encoder-style, predict 15% hidden ones : {round(n * 0.15)} training signals&quot;)
+print(f&quot;ratio                                  : {(n - 1) / (n * 0.15):.1f}x&quot;)
+
+# Then try: paste a paragraph from these notes into `text` and recount.</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>passage: 46 tokens
+decoder-only, predict every next token : 45 training signals
+encoder-style, predict 15% hidden ones : 7 training signals
+ratio                                  : 6.5x</pre></div><p class="ex-ans"><strong>45</strong> for decoder-only against <strong>7</strong> for encoder-style masking: 6.5&times; more from the same text.</p></details>
+        <p><strong>Then try:</strong> paste any paragraph from these notes into <code>text</code> and recount.</p>
+        <details><summary>What happens</summary><p class="ex-ans">A 57-token paragraph gives 56 against 9, still <strong>6.5&times;</strong>. The ratio barely moves with the text, because it's built in: every position versus 15% of positions is about 6.7&times; for any passage.</p></details>
+      </div>
+    </div>
 </section>
 
 <!-- 7 -->
@@ -1036,6 +1304,40 @@ position  50:  -0.262 +0.965 -0.959 +0.284</pre></div>
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/07_position.py">exercises/llm-101/02/07_position.py</a></p>
+        <p><strong>Predict first:</strong> will <code>dog</code> come out the same in both sentences?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 07: attention on its own cannot tell word order.
+# Predict first: will &quot;dog&quot; come out the same in both sentences?
+import numpy as np
+
+V = {&quot;dog&quot;: [2.0, 0.3, 0.5, 0.0], &quot;bites&quot;: [0.4, 2.2, 0.3, 0.0], &quot;man&quot;: [1.8, 0.4, 1.9, 0.0]}
+
+def attend(words, add_position=False):
+    E = np.array([V[w] for w in words], dtype=float)
+    if add_position:                               # the sine/cosine pattern from the note
+        pos = np.arange(len(words))[:, None]
+        E = E + np.hstack([np.sin(pos), np.cos(pos), np.sin(pos / 10), np.cos(pos / 10)])
+    s = E @ E.T / 2
+    w = np.exp(s - s.max(axis=1, keepdims=True))
+    return (w / w.sum(axis=1, keepdims=True)) @ E
+
+for add in (False, True):
+    a = attend([&quot;dog&quot;, &quot;bites&quot;, &quot;man&quot;], add)[0]    # &quot;dog&quot; is word 0 here...
+    b = attend([&quot;man&quot;, &quot;bites&quot;, &quot;dog&quot;], add)[2]    # ...and word 2 here
+    label = &quot;with position &quot; if add else &quot;without position&quot;
+    print(f&quot;{label}  dog/bites/man {np.round(a, 2)}   man/bites/dog {np.round(b, 2)}&quot;)
+
+# Then try: make the position signal tiny by writing E = E + 0.01 * np.hstack(...).
+# Can you still tell the two sentences apart?</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>without position  dog/bites/man [1.74 0.55 1.16 0.  ]   man/bites/dog [1.74 0.55 1.16 0.  ]
+with position   dog/bites/man [2.01 1.3  1.06 0.99]   man/bites/dog [2.59 0.34 0.93 0.98]</pre></div><p class="ex-ans">Without position: <strong>identical</strong>, [1.74, 0.55, 1.16, 0]. With the sine/cosine pattern added they finally differ ([2.01, 1.30, &hellip;] against [2.59, 0.34, &hellip;]).</p></details>
+        <p><strong>Then try:</strong> make the position signal tiny: <code>E = E + 0.01 * np.hstack(...)</code>.</p>
+        <details><summary>What happens</summary><p class="ex-ans">At two decimals the two sentences look <strong>identical again</strong> ([1.74, 0.55, 1.16, 0.01]). A position signal too weak to matter is as good as none.</p></details>
+      </div>
+    </div>
 </section>
 
 <!-- 8 -->
@@ -1099,6 +1401,54 @@ with caching — keep what you already computed
       </details>
     </div>
   </div>
+  <div class="body">
+      <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/08_kv_cache.py">exercises/llm-101/02/08_kv_cache.py</a></p>
+        <p><strong>Predict first:</strong> roughly how much faster is the cached version at 400 tokens?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 08: generate tokens with and without a KV cache, and time both.
+# Predict first: roughly how much faster is the cached version at 400 tokens?
+import time
+import numpy as np
+
+rng = np.random.default_rng(0)
+d, n = 64, 400
+W = rng.standard_normal((d, d)) / 8
+tokens = rng.standard_normal((n, d))
+
+start = time.perf_counter()                        # no cache: redo every token each step
+for t in range(1, n + 1):
+    keys = tokens[:t] @ W
+    _ = keys @ tokens[t - 1]
+no_cache = time.perf_counter() - start
+
+start = time.perf_counter()                        # cache: compute each token&#x27;s key once
+cache = np.empty((n, d))
+for t in range(1, n + 1):
+    cache[t - 1] = tokens[t - 1] @ W
+    _ = cache[:t] @ tokens[t - 1]
+with_cache = time.perf_counter() - start
+
+print(f&quot;key rows computed, no cache : {n * (n + 1) // 2:,}&quot;)
+print(f&quot;key rows computed, cache    : {n:,}&quot;)
+print(f&quot;time, no cache : {no_cache * 1000:6.1f} ms&quot;)
+print(f&quot;time, cache    : {with_cache * 1000:6.1f} ms   ({no_cache / with_cache:.0f}x faster)&quot;)
+per_token = 2 * 32 * 1024 * 2                      # keys and values, 32 layers, 1024 wide, 2 bytes
+print(f&quot;\ncache memory for an 8B-class model: {per_token // 1024} KiB per token, &quot;
+      f&quot;{per_token * 8192 / 1024**3:.2f} GiB at 8,192 tokens&quot;)
+
+# Then try: set n = 800. Does the gap double, or more?</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>key rows computed, no cache : 80,200
+key rows computed, cache    : 400
+time, no cache :   15.6 ms
+time, cache    :    3.4 ms   (5x faster)
+
+cache memory for an 8B-class model: 128 KiB per token, 1.00 GiB at 8,192 tokens</pre></div><p class="ex-ans">80,200 key rows without a cache against 400 with one &mdash; 200&times; less work &mdash; but only about <strong>5&times;</strong> faster (16.0 ms against 3.1 ms). The cache memory line matches the note: 128 KiB per token, 1.00 GiB at 8,192 tokens.</p></details>
+        <p><strong>Then try:</strong> set <code>n = 800</code>.</p>
+        <details><summary>What happens</summary><p class="ex-ans">320,400 key rows against 800, and the speed-up grows to about <strong>8&times;</strong> (56.5 ms against 6.8 ms). The longer the output, the more the cache saves.</p></details>
+        <p class="ex-note"><b>Worth knowing.</b> Why only 5&times; for 200&times; less work? At this tiny size Python's own loop overhead dominates the timing. In a real model each key costs far more to compute, so the saving tracks the work much more closely.</p>
+      </div>
+    </div>
 </section>
 
 <footer>

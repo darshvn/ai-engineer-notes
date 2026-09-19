@@ -1,0 +1,7 @@
+# Pinned for an Intel Mac: PyTorch 2.2.2 is the last release with x86_64 macOS
+# wheels, it needs Python 3.11 or older, and it was built against NumPy 1.x.
+numpy<2
+tiktoken
+torch==2.2.2
+transformers==4.44.2
+sentence-transformers==3.0.1

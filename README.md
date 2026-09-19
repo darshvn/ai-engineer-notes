@@ -21,6 +21,24 @@ tools/                      the scripts below
 Notes carry their CSS inline rather than linking a shared stylesheet, so any one
 of them can be opened alone or embedded elsewhere without the rest of the site.
 
+## Exercises
+
+Every section of every note ends with a short script in `exercises/`, one per
+section, named after the section it belongs to. Each one says what to predict
+before you run it and ends with a change to try. The outputs quoted in the notes
+are what these scripts actually print.
+
+```bash
+cd exercises
+uv venv --python 3.11 .venv      # or: python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python llm-101/01/01_next_token_table.py
+```
+
+`requirements.txt` is pinned for an Intel Mac: PyTorch 2.2.2 is the last release
+with x86_64 macOS wheels and needs Python 3.11 or older.
+
 ## Scripts
 
 ```bash
