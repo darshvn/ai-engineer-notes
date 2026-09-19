@@ -554,6 +554,19 @@ dl.words dd { margin: 0; font-size: 15.5px; }
 .exercise .ex-ans strong { color: var(--ink); }
 .exercise .ex-note { font-size: 14.5px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 10px; margin-top: 12px; }
 .exercise .ex-note b { color: var(--signal); font-weight: 600; }
+/* ---- watch it: the exact minutes of the videos that teach the same idea -- */
+.step.watch-step { color: var(--signal); }
+.step.watch-step::after { background: var(--signal); opacity: 0.35; }
+.watch { border: 1px solid var(--rule); border-left: 3px solid var(--signal);
+  background: var(--surface); padding: 14px 20px 14px; margin: 10px 0 28px; }
+.watch ol { list-style: none; padding: 0; margin: 0; }
+.watch li { margin: 0 0 14px; }
+.watch li a { color: var(--ink); font-weight: 600; text-decoration-color: var(--signal); text-underline-offset: 3px; }
+.watch .wspan { font-family: var(--f-mono); font-size: 11.5px; color: var(--signal); margin-left: 10px; white-space: nowrap; }
+.watch li p { margin: 4px 0 0; font-size: 15px; color: var(--muted); line-height: 1.55; }
+.watch .bridge { border-top: 1px solid var(--rule); padding-top: 10px; margin: 4px 0 0; font-size: 14.5px; }
+.watch .bridge b { display: block; font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--signal); font-weight: 600; margin-bottom: 4px; }
 .run-setup { margin: 22px 0 0; padding: 18px 22px; border: 1px solid var(--rule); background: var(--surface); }
 .run-setup h2 { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 10px; color: var(--accent); font-weight: 600; }
 .run-setup p { margin: 0 0 10px; font-size: 15.5px; max-width: 64ch; }
@@ -615,6 +628,7 @@ d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch
 <div class="howto">
   <h2>How to read this</h2>
   <p>Every section runs in the same four steps: <strong>see a real example</strong>, <strong>get the words</strong> you need for it, <strong>walk through it</strong>, then <strong>state the rule</strong> it demonstrates. The rule comes last on purpose &mdash; it only means anything once you've seen the thing it describes.</p>
+  <p>After the rule, <strong>Watch it</strong> points to the exact minutes of the CampusX, 3Blue1Brown and Karpathy videos that teach the same idea, and says where their words or claims differ from these. Read first, then watch: the second explanation lands better once you know what to look for.</p>
   <p>There's one question at the end of each section with the answer folded away. Answer it before you open it. If you can't, re-read that section rather than moving on &mdash; each one is used by the next.</p>
 </div>
 
@@ -666,9 +680,11 @@ python llm-101/01/01_next_token_table.py</pre>
 
     <div class="step">Words</div>
     <dl class="words">
-      <div><dt>token</dt><dd>A word-piece. Not the same as a word. <code>" Paris"</code> is one token; <code>"thermodynamics"</code> is three (<code>ther</code> + <code>m</code> + <code>odynamics</code>). A model has a fixed list of them &mdash; 100,277 in the case above.</dd></div>
+      <div><dt>token</dt><dd>A word-piece. Not the same as a word. <code>" Paris"</code> is one token; <code>"thermodynamics"</code> is three (<code>ther</code> + <code>m</code> + <code>odynamics</code>). A model has a fixed list of them, its <em>vocabulary</em>: 100,277 for GPT-4's tokenizer (the one above, and the one Karpathy uses), 50,257 for GPT-2 in the exercise.</dd></div>
       <div><dt>probability</dt><dd>A number between 0 and 1 saying how likely something is.</dd></div>
       <div><dt>distribution</dt><dd>The whole table. Just a name for &ldquo;every token, each with its probability.&rdquo; They always add up to exactly 1.</dd></div>
+      <div><dt>logit</dt><dd>The raw score the network gives each token <em>before</em> it becomes a probability. Any number, even negative.</dd></div>
+      <div><dt>softmax</dt><dd>The step that turns logits into the table: raise <em>e</em> to each score, then divide each by the total.</dd></div>
     </dl>
 
     <div class="step">Walk it</div>
@@ -685,7 +701,18 @@ python llm-101/01/01_next_token_table.py</pre>
     </table>
     </div>
 
-    <p>Three steps, three tables. The model never wrote a sentence &mdash; it produced one table at a time, and something picked a row from each.</p>
+    <p>Three steps, three tables. The model never wrote a sentence &mdash; it produced one table at a time, and a separate step, the <strong>sampler</strong>, picked a row from each.</p>
+    <p>The table itself comes out of the network in two moves. First every token gets a raw score, a logit. Then softmax turns the scores into probabilities. Pretend the vocabulary had three tokens:</p>
+
+    <div class="showcase"><pre>                 " Paris"   " located"   " a"
+logits              5.0        2.0        1.2
+softmax           <span class="hl">0.933</span>      0.046      0.021   <span class="dim">&larr; adds to 1</span></pre></div>
+
+    <div class="gotcha">
+      <b>The top row isn't always the one picked</b>
+      <p>The walk-through above always took the top row. That's <em>greedy</em> picking. Chat models usually <em>sample</em> instead: roll a die weighted by the table, so " Paris" at 0.933 wins about 93 times in 100 and loses the rest.</p>
+      <p><strong>Temperature</strong> divides the logits before softmax. At 0.5 the same scores give 0.9970 / 0.0025 / 0.0005, almost always the top row. At 2 they give 0.728 / 0.163 / 0.109, more variety. That's why the same prompt can come back different. Inference settings get their own note (&sect;5).</p>
+    </div>
   </div>
 
   <figure>
@@ -730,7 +757,7 @@ python llm-101/01/01_next_token_table.py</pre>
     <div class="step rule-step">The rule</div>
     <div class="rule">
       <p>A <strong>language model</strong> is a thing that takes some text and gives you the probability of every possible next token.</p>
-      <p>That's the whole definition. Transformers, training, GPUs &mdash; all of it is machinery for making that one table more accurate.</p>
+      <p>That's the whole definition. Transformers, training, GPUs &mdash; all of it is machinery for making that one table more accurate. A sampler then picks from it.</p>
     </div>
 
     <div class="check">
@@ -741,6 +768,18 @@ python llm-101/01/01_next_token_table.py</pre>
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=wjZofJX0v4M&t=85s">3Blue1Brown · Transformers, the tech behind LLMs</a><span class="wspan">1:25–2:57</span>
+            <p>Prediction as &ldquo;a probability distribution over chunks of text,&rdquo; then generation as sample, append, run again: the loop above. Then the same loop on GPT-2 and GPT-3: identical machinery, and the bigger model writes sense where the small one writes nonsense.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=wjZofJX0v4M&t=1222s">3Blue1Brown · same video</a><span class="wspan">20:22–26:03</span>
+            <p>Where the table comes from: the last vector becomes about 50,000 logits, softmax turns them into probabilities, temperature reshapes them. Uses a Harry Potter example (&ldquo;Professor&rdquo; &rarr; Snape) and shows temperature 0 against a high one on the same story.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=7xTGNNLPyMI&t=1560s">Karpathy · Deep Dive into LLMs</a><span class="wspan">26:00–29:40</span>
+            <p>Inference as &ldquo;flipping a biased coin&rdquo; for every token, with real token IDs, and why the output is a remix of the training data rather than a copy of it.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> probability distribution = the table · take a random sample = the sampler picks a row · chunks of text = tokens · logits = the raw scores before softmax</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/01/01_next_token_table.py">exercises/llm-101/01/01_next_token_table.py</a></p>
@@ -812,14 +851,24 @@ model says          truth is " mat"        score
 
     <div class="step">Words</div>
     <dl class="words">
-      <div><dt>loss</dt><dd>That score. One number saying how wrong the model was on one guess. Zero means it was certain and correct.</dd></div>
-      <div><dt>training</dt><dd>Doing this billions of times and, after each one, nudging the model's internal numbers so the true token would have scored a bit higher next time.</dd></div>
-      <div><dt>self-supervised</dt><dd>Nobody had to label anything. The right answer was already sitting in the sentence &mdash; you just covered it up. That's why this could be done on the whole internet.</dd></div>
+      <div><dt>loss</dt><dd>That score. One number saying how wrong the model was on one guess. Zero means it was certain and correct. Its full name is <em>cross-entropy</em> loss (<code>categorical_crossentropy</code> in the CampusX code).</dd></div>
+      <div><dt>training</dt><dd>Doing this over and over, nudging the model's internal numbers so the true tokens score a bit higher next time. Real runs nudge once per <em>batch</em> &mdash; about a million guesses in Karpathy's run &mdash; and the loss they print is the average over that batch.</dd></div>
+      <div><dt>self-supervised</dt><dd>Supervised learning where the text supplies its own labels. CampusX calls it &ldquo;turning it into a supervised problem&rdquo;: same thing. The right answer was already sitting in the sentence, so nobody labelled anything by hand, and it could run on the whole internet.</dd></div>
     </dl>
 
     <div class="step">Walk it</div>
     <p>Look at what the score does across those three cases. Going from 0.95 to 0.60 costs you 0.46. Going from 0.60 down to 0.01 costs 4.10. The penalty doesn't rise steadily &mdash; it <strong>explodes</strong> as the true answer's probability approaches zero.</p>
     <p>So the thing training punishes hardest isn't being wrong. It's being <em>confident and wrong</em>. A model that says &ldquo;probably A, but maybe B&rdquo; is treated far more kindly than one that says &ldquo;definitely A&rdquo; and misses.</p>
+    <p>And one sentence isn't one example. Every position gets covered in turn, so a sentence of <em>n</em> tokens gives <em>n</em> &minus; 1 guesses. This is CampusX's own example, split by word to keep it readable:</p>
+
+    <div class="showcase"><pre><span class="dim">"Hi my name is Nitish"  &rarr;  4 training examples</span>
+
+Hi               &rarr;  my
+Hi my            &rarr;  name
+Hi my name       &rarr;  is
+Hi my name is    &rarr;  <span class="hl">Nitish</span></pre></div>
+
+    <p>Why is the answer a table and not a single number? Token IDs are labels, not quantities. Token 4 isn't &ldquo;bigger&rdquo; than token 2, and a prediction of 2.7 would mean nothing. So this is <strong>classification</strong> over the whole vocabulary: one probability per token.</p>
 
     <div class="gotcha">
       <b>Where hallucination comes from</b>
@@ -829,7 +878,7 @@ model says          truth is " mat"        score
 
     <div class="step rule-step">The rule</div>
     <div class="rule">
-      <p>Training is: cover up a token, let the model guess, score how much probability it put on the true one, nudge it to do better. Repeat about ten trillion times.</p>
+      <p>Training is: cover up a token, let the model guess, score how much probability it put on the true one, nudge it to do better. Do it at every position of every sentence, across trillions of tokens (the FineWeb dataset Karpathy uses is 15 trillion).</p>
       <p>Nothing was labelled by hand. The text labelled itself.</p>
     </div>
 
@@ -841,6 +890,20 @@ model says          truth is " mat"        score
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=fiqo6uPCJVI&t=330s">CampusX · LSTM Part 3: Next Word Predictor</a><span class="wspan">5:30–11:45</span>
+            <p>The strategy on the whiteboard: turn plain text into input &rarr; next-word pairs, every prefix of every sentence, then words into numbers. His model is an LSTM with whole-word tokens, but GPT&rsquo;s training pairs are built exactly this way.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=fiqo6uPCJVI&t=1680s">CampusX · same video</a><span class="wspan">28:00–32:00</span>
+            <p>Why it is classification over the vocabulary and not regression: one-hot labels in, softmax probabilities out. The reason the output is a table.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=7xTGNNLPyMI&t=900s">Karpathy · Deep Dive into LLMs</a><span class="wspan">15:00–19:55</span>
+            <p>A window of tokens in, 100,277 probabilities out, the true next token as &ldquo;the label&rdquo;: nudge its probability up and the others down. This section with real token IDs.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=7xTGNNLPyMI&t=2080s">Karpathy · same video</a><span class="wspan">34:40–38:05</span>
+            <p>A real training run: one printed line per update of about a million tokens, the loss falling, and sample text going from random to locally coherent.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> supervised learning (CampusX) = self-supervised here · categorical cross-entropy = loss, &minus;log&nbsp;p · the label = the true token · word by word (CampusX) = token by token; his tokenizer splits on words, LLMs split into word-pieces</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/01/02_loss.py">exercises/llm-101/01/02_loss.py</a></p>
@@ -919,13 +982,14 @@ The cat sat on the thermodynamics.
 
     <div class="step">Words</div>
     <dl class="words">
-      <div><dt>a pass</dt><dd>One trip round the loop from &sect;1. Producing one token takes exactly one pass, and one pass does a <strong>fixed</strong> amount of computation &mdash; it cannot try harder.</dd></div>
+      <div><dt>a pass</dt><dd>One trip round the loop from &sect;1. Producing one token takes exactly one pass, and one pass does a <strong>fixed</strong> amount of computation &mdash; it cannot try harder. It's fixed because the network has a fixed number of layers, about a hundred in a modern model (a longer context costs a little more, not much).</dd></div>
     </dl>
 
     <div class="step">Walk it</div>
     <p>In A, the model has one pass to go from <code>"17 × 24 = "</code> straight to a number. That's all the computation it will ever get for the problem.</p>
     <p>In B, each written token goes back in as input (the loop in &sect;1). So <code>"17 × 20 = 340"</code> is now <em>text the model can read</em> when computing the next token. It has offloaded a partial result onto the page and can build on it.</p>
     <p>This is why the reasoning has to be <strong>visible</strong>. There's no hidden place to put it &mdash; writing it down is the only way the model can carry something from one pass to the next.</p>
+    <p>And the order matters. Suppose it writes <code>"The answer is 408, because 17 × 20 = 340…"</code>. The <code>408</code> was still produced in one pass, before any working existed, so the working after it can't have helped. Karpathy calls that <strong>post-hoc justification</strong>. Working first, answer last.</p>
   </div>
 
   <figure>
@@ -976,7 +1040,7 @@ The cat sat on the thermodynamics.
       <text x="578" y="141" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="var(--signal)">3 units</text>
     </svg>
     </div>
-    <figcaption>Each box on the bottom row is a separate trip round the loop, and each one can read everything written before it. Telling a model to think step by step isn't a magic phrase — it is the only way to give it more than one pass on a problem.</figcaption>
+    <figcaption>Each box on the bottom row is a separate trip round the loop, and each one can read everything written before it. Telling a model to think step by step isn't a magic phrase — it is how you give it more than one pass on a problem.</figcaption>
   </figure>
 
   <div class="body">
@@ -984,6 +1048,11 @@ The cat sat on the thermodynamics.
     <div class="rule">
       <p>One pass buys a fixed amount of computation. Writing intermediate steps is how a model buys more, because its own output is the only thing it can add to its own input.</p>
       <p>Squeezing a hard question into a one-line answer isn't efficiency &mdash; it caps how much thinking is possible.</p>
+    </div>
+
+    <div class="gotcha">
+      <b>More passes isn't the same as right answers</b>
+      <p>Every written step is itself one pass, and any of them can slip. So when a step must be exact, Karpathy has the model write code and run it instead. Asked to count a row of dots, the model guessed 161; Python's <code>.count()</code> got the true 177. Written steps buy computation. Tools buy exactness.</p>
     </div>
 
     <div class="check">
@@ -994,6 +1063,18 @@ The cat sat on the thermodynamics.
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=7xTGNNLPyMI&t=6505s">Karpathy · Deep Dive into LLMs</a><span class="wspan">1:48:25–1:53:10</span>
+            <p>Emily&rsquo;s apples, answered two ways. Fixed computation per token because the layers are fixed, &ldquo;distribute your reasoning across many tokens,&rdquo; and why answer-first is post-hoc justification. The whole section in one clip.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=7xTGNNLPyMI&t=6840s">Karpathy · same video</a><span class="wspan">1:54:00–1:55:30</span>
+            <p>Forcing a one-token answer: fine with easy numbers, wrong with harder ones (23 apples, 177 oranges), right again once it may work step by step.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=7xTGNNLPyMI&t=6930s">Karpathy · same video</a><span class="wspan">1:55:30–2:00:55</span>
+            <p>The other route: tools. Code for the arithmetic, and code for counting the dots.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> forward pass = a pass · working memory = the text written so far · &ldquo;models need tokens to think&rdquo; = more passes need more written tokens</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/01/03_passes.py">exercises/llm-101/01/03_passes.py</a></p>
@@ -1047,17 +1128,18 @@ step by step     32 tokens -&gt; 32 passes</pre></div><p class="ex-ans"><strong>
     <dl class="words">
       <div><dt>parameters</dt><dd>The internal numbers that get nudged during training. &ldquo;7 billion&rdquo; means seven billion of them. Bigger usually means better, at a cost.</dd></div>
       <div><dt>emergence</dt><dd>The name for what the right-hand column does &mdash; an ability that is absent at small scale and present at large scale, appearing in a jump rather than creeping up. This is the word people use for it; whether it is real or an artifact of the ruler is the point of this section.</dd></div>
-      <div><dt>scaling law</dt><dd>The observed fact that <strong>loss</strong> falls in a predictable line as size and data go up. Predictable enough to forecast a model you haven't built.</dd></div>
+      <div><dt>scaling law</dt><dd>The observed fact that <strong>loss</strong> falls in a predictable line as two numbers go up: the parameters (<em>N</em>) and the amount of training text (<em>D</em>). Predictable enough to forecast a model you haven't built.</dd></div>
     </dl>
 
     <div class="step">Walk it</div>
     <p>Look at why the right column jumps while the left column doesn't. 5-digit addition is scored right-or-wrong. Get four digits correct out of five and you score <strong>zero</strong>.</p>
-    <p>So the model was steadily improving the whole time &mdash; that's the left column &mdash; but the measurement couldn't see any of it until the improvement crossed the line where every digit lands. The cliff is in the <em>ruler</em>, not in the model.</p>
+    <p>So the model was steadily improving the whole time &mdash; that's the left column &mdash; but the measurement couldn't see any of it until the improvement crossed the line where every digit lands. Much of the cliff is in the <em>ruler</em>, not in the model.</p>
+    <p>That's the argument of Schaeffer and colleagues (2023): switch to a score that gives partial credit, or test on more questions, and many claimed emergent abilities turn into smooth curves. It's a strong case, not a closed one. The paper itself says emergence &ldquo;may not be&rdquo; a fundamental property of scale.</p>
 
     <div class="gotcha">
       <b>What this costs you in practice</b>
-      <p>Loss you can forecast. What the model can actually <em>do</em> you cannot.</p>
-      <p>So &ldquo;the next model will be like this one but 10% better&rdquo; is the wrong expectation. Abilities show up in jumps, and so do things that stop working. Test each new model on your own task rather than assuming.</p>
+      <p>Loss you can forecast. An average over many tests tends to rise with it too &mdash; Karpathy's example is every exam improving from GPT-3.5 to GPT-4. A single pass-or-fail task you can't forecast: it can sit at 0% and then jump.</p>
+      <p>So &ldquo;the next model will be like this one but 10% better&rdquo; is the wrong expectation for <em>your</em> task. Test each new model on it rather than assuming.</p>
     </div>
 
     <div class="step rule-step">The rule</div>
@@ -1073,6 +1155,16 @@ step by step     32 tokens -&gt; 32 passes</pre></div><p class="ex-ans"><strong>
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=zjkBMFhNj_g&t=1535s">Karpathy · Intro to Large Language Models</a><span class="wspan">25:35–27:35</span>
+            <p>Scaling laws in two minutes: next-word accuracy is a smooth, predictable function of <em>N</em> and <em>D</em>, &ldquo;algorithmic progress is not necessary,&rdquo; and it correlates with the evaluations people care about. He doesn&rsquo;t discuss emergence.</p></li>
+          <li><a href="https://arxiv.org/abs/2304.15004">Schaeffer, Miranda &amp; Koyejo · Are Emergent Abilities of LLMs a Mirage?</a><span class="wspan">abstract</span>
+            <p>The ruler argument with evidence: pass-or-fail scores produce apparent jumps, partial-credit scores show smooth change, and the same trick can manufacture &ldquo;emergence&rdquo; in vision models.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> <em>N</em> = parameters · <em>D</em> = training text · metric = the ruler · nonlinear or discontinuous metric = a pass-or-fail score · accuracy of next-word prediction = loss, read the other way up</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/01/04_emergence.py">exercises/llm-101/01/04_emergence.py</a></p>
@@ -1124,28 +1216,31 @@ for size, p in zip(sizes, per_digit):
   → useless for anything else
   → new product category? start over
 
-<span class="dim">THE NEW WAY — ask a general model</span>
-  "Is this review positive or negative? {review}"
+<span class="dim">THE NEW WAY — start from a general model</span>
+  prompt it:  "Is this review positive or negative? {review}"
   → works well, <span class="hl">no training, no labels</span>, ~800 ms
+  → or fine-tune it on a few hundred labelled reviews
   → same model also summarises, translates, writes code
   → hundreds of times the cost per call</pre></div>
 
     <div class="step">Words</div>
     <dl class="words">
-      <div><dt>foundation model</dt><dd>A model trained on a huge amount of general text, not for any particular job, that can then be pointed at many jobs. &ldquo;Foundation&rdquo; describes the <em>breadth</em> it was trained on &mdash; not its size.</dd></div>
+      <div><dt>foundation model</dt><dd>A big model pre-trained on huge, varied data with a <em>general</em> task &mdash; for text, next-token prediction from &sect;2 &mdash; whose learning transfers to many other jobs. &ldquo;Foundation&rdquo; is the base you build on. In practice they're all big (billions of parameters, in CampusX's definition), but size isn't what makes one: a huge model trained for one narrow job is still task-specific.</dd></div>
       <div><dt>task-specific model</dt><dd>A model trained for exactly one job, and useless outside it.</dd></div>
+      <div><dt>fine-tuning</dt><dd>Extra training of a pre-trained model on a small labelled set for your job. CampusX's analogy: engineering college is pre-training, the company's induction programme is fine-tuning.</dd></div>
     </dl>
 
     <div class="step">Walk it</div>
     <p>Neither column wins outright &mdash; read the trade rather than picking a side.</p>
     <p>The old way is <strong>250× faster and far cheaper per call</strong>, but you paid for 20,000 hand-labelled reviews before it did anything, and it's stuck at that one job.</p>
-    <p>The new way works this afternoon with no data at all, and the same model handles jobs you haven't thought of yet &mdash; but every call is slow and comparatively expensive.</p>
-    <p>Which is why the usual sequence is: use the general model to find out whether the thing is worth building, and only build a small specialised model once you know it is and the volume hurts.</p>
+    <p>The new way works this afternoon with no data at all if you prompt it, or with a few hundred examples if you fine-tune it. The same model handles jobs you haven't thought of yet &mdash; but every call is slow and comparatively expensive.</p>
+    <p>There's a second cost the old way hides: data, money and a team able to train a model from scratch. CampusX's point is that most companies had none of these, so their one-job models came out mediocre. A foundation model arrives already strong, because someone else paid for its three stages: <strong>pre-training</strong> on huge data (the expensive part), <strong>alignment</strong> (people rank its answers and it's rewarded for the best), then <strong>fine-tuning</strong> or prompting for your job.</p>
+    <p>Task-specific still wins when no general model covers the job &mdash; CampusX's example is predicting a cricket innings' final score &mdash; or when volume makes per-call cost dominate. Hence the usual sequence: use the general model to find out whether the thing is worth building, and only build a small specialised one once you know it is and the volume hurts.</p>
 
     <div class="step rule-step">The rule</div>
     <div class="rule">
       <p>A foundation model trades cost and speed for flexibility and a standing start. A task-specific model trades flexibility for being cheap and fast at the one thing.</p>
-      <p>&ldquo;Foundation&rdquo; means broadly trained and adaptable &mdash; not big.</p>
+      <p>What makes a model a foundation is general pre-training that transfers, not size alone &mdash; though in practice they are all big.</p>
     </div>
 
     <div class="check">
@@ -1156,6 +1251,20 @@ for size, p in zip(sizes, per_digit):
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=bTLaTvbi9vM&t=150s">CampusX · What are Foundation Models?</a><span class="wspan">2:30–3:30</span>
+            <p>The definition: a huge architecture, massive data and a general task. It leads with size, where this note leads with transfer. Both are true of every foundation model you will use.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=bTLaTvbi9vM&t=705s">CampusX · same video</a><span class="wspan">11:45–16:00</span>
+            <p>Why next-word prediction transfers: learning language well enough to predict it also gets you sentiment analysis. The link between &sect;2 and this section.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=bTLaTvbi9vM&t=990s">CampusX · same video</a><span class="wspan">16:30–25:05</span>
+            <p>Pre-training &rarr; alignment &rarr; fine-tuning, and where the name comes from: the foundation of a building.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=bTLaTvbi9vM&t=1505s">CampusX · same video</a><span class="wspan">25:05–31:45</span>
+            <p>Before and after: a support chatbot trained from scratch on company emails against a fine-tuned foundation model, and the cricket-score case where task-specific still wins.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> fine-tuning on a little data = the video&rsquo;s way to adapt · prompting = this note&rsquo;s zero-data way to adapt · &ldquo;huge, massive data, general task&rdquo; = the video&rsquo;s definition; general pre-training that transfers = the part that makes it a foundation</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/01/05_task_specific.py">exercises/llm-101/01/05_task_specific.py</a></p>
@@ -1228,9 +1337,10 @@ returns <span class="out">text</span>                 returns <span class="hl">n
 
     <div class="step">Words</div>
     <dl class="words">
-      <div><dt>generative model</dt><dd>Produces text, one token at a time &mdash; the loop from &sect;1. This is what people mean by &ldquo;an LLM.&rdquo;</dd></div>
+      <div><dt>generative model</dt><dd>Produces text, one token at a time &mdash; the loop from &sect;1. LangChain, in the CampusX video, calls these <em>language models</em>. &ldquo;LLM&rdquo; usually means this kind, but the word stretches: CampusX's foundation-models video counts BERT, a representation model, as an LLM.</dd></div>
       <div><dt>embedding</dt><dd>That fixed-length list of numbers. A position in space that stands for the <em>meaning</em> of the input.</dd></div>
-      <div><dt>representation model</dt><dd>Produces embeddings rather than text. Much smaller and much cheaper than a generative model.</dd></div>
+      <div><dt>representation model</dt><dd>Produces embeddings rather than text. LangChain calls it an <em>embedding model</em>. Much smaller: the one in the exercise has 22.7 million parameters, against 124 million for the smallest GPT-2 and billions for chat models.</dd></div>
+      <div><dt>cosine similarity</dt><dd>How close two embeddings are, measured by the angle between them: 1 means pointing the same way, 0 means unrelated.</dd></div>
     </dl>
 
     <div class="step">Walk it</div>
@@ -1242,7 +1352,7 @@ returns <span class="out">text</span>                 returns <span class="hl">n
 
 <span class="dim">…even though the first two share almost no words.</span></pre></div>
 
-    <p>That's the whole trick behind search that works on meaning rather than keywords. Turn 2 million documents into 2 million embeddings once. Turn the incoming question into one embedding. Find the closest few. It's a distance comparison, not a text search.</p>
+    <p>That's the whole trick behind search that works on meaning rather than keywords. Turn 2 million documents into 2 million embeddings once. Turn the incoming question into one embedding. Find the closest few by cosine similarity. It's an angle comparison, not a text search. The document embeddings are stored once in a <strong>vector database</strong>, and each question embeds only itself; CampusX calls this step <em>retrieve</em>.</p>
     <p>And it's why a real question-answering system runs <strong>both</strong>: the small cheap model finds the relevant documents, then the big expensive one reads them and writes the answer.</p>
   </div>
 
@@ -1303,6 +1413,18 @@ returns <span class="out">text</span>                 returns <span class="hl">n
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=HdcLE8JuMrA&t=145s">CampusX · LangChain Models</a><span class="wspan">2:25–6:30</span>
+            <p>The two model types: text in, text out, and text in, numbers out. What embeddings are, and why the second type is what makes semantic search and RAG possible.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=HdcLE8JuMrA&t=5392s">CampusX · same video</a><span class="wspan">89:52–101:00</span>
+            <p>The exercise idea with real code: five cricketer documents and a question, embed both, cosine similarity picks the Virat Kohli document at 0.66. Ends with why document embeddings go in a vector database.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=HdcLE8JuMrA&t=540s">CampusX · same video</a><span class="wspan">9:00–15:30</span>
+            <p>Optional: LangChain&rsquo;s &ldquo;LLM&rdquo; against &ldquo;chat model&rdquo; (plain text in and out, or a list of messages). Worth it only so the word LLM doesn&rsquo;t trip you up later.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> language model = generative model · embedding model = representation model · semantic search = search by meaning · retrieve = find the closest documents</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/01/06_embeddings.py">exercises/llm-101/01/06_embeddings.py</a></p>

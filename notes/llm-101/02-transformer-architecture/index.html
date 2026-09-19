@@ -571,6 +571,19 @@ dl.words dd { margin: 0; font-size: 15.5px; }
 .exercise .ex-ans strong { color: var(--ink); }
 .exercise .ex-note { font-size: 14.5px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 10px; margin-top: 12px; }
 .exercise .ex-note b { color: var(--signal); font-weight: 600; }
+/* ---- watch it: the exact minutes of the videos that teach the same idea -- */
+.step.watch-step { color: var(--signal); }
+.step.watch-step::after { background: var(--signal); opacity: 0.35; }
+.watch { border: 1px solid var(--rule); border-left: 3px solid var(--signal);
+  background: var(--surface); padding: 14px 20px 14px; margin: 10px 0 28px; }
+.watch ol { list-style: none; padding: 0; margin: 0; }
+.watch li { margin: 0 0 14px; }
+.watch li a { color: var(--ink); font-weight: 600; text-decoration-color: var(--signal); text-underline-offset: 3px; }
+.watch .wspan { font-family: var(--f-mono); font-size: 11.5px; color: var(--signal); margin-left: 10px; white-space: nowrap; }
+.watch li p { margin: 4px 0 0; font-size: 15px; color: var(--muted); line-height: 1.55; }
+.watch .bridge { border-top: 1px solid var(--rule); padding-top: 10px; margin: 4px 0 0; font-size: 14.5px; }
+.watch .bridge b { display: block; font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--signal); font-weight: 600; margin-bottom: 4px; }
 .run-setup { margin: 22px 0 0; padding: 18px 22px; border: 1px solid var(--rule); background: var(--surface); }
 .run-setup h2 { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 10px; color: var(--accent); font-weight: 600; }
 .run-setup p { margin: 0 0 10px; font-size: 15.5px; max-width: 64ch; }
@@ -654,6 +667,7 @@ d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch
 <div class="howto">
   <h2>How to read this</h2>
   <p>Same four steps as &sect;1: <strong>see it</strong>, <strong>words</strong>, <strong>walk it</strong>, <strong>the rule</strong>. Every number on this page was computed, not remembered &mdash; the attention example is a real calculation you could redo in ten lines of NumPy.</p>
+  <p>After the rule, <strong>Watch it</strong> points to the exact minutes of the CampusX, 3Blue1Brown and Hugging Face material that teaches the same idea, and says where their words or claims differ from these. Read first, then watch: the second explanation lands better once you know what to look for.</p>
   <p>&sect;1 said a model turns text into a table of next-token probabilities. This is the part that explains <em>how</em>. It's also the section that lets you reason about speed and cost later, which is why it's worth the time.</p>
 </div>
 
@@ -707,16 +721,17 @@ python llm-101/02/01_sequential_vs_parallel.py</pre>
       <div><dt>RNN</dt><dd>Recurrent Neural Network. Reads one token, updates a memory, reads the next. The design that dominated before 2017.</dd></div>
       <div><dt>hidden state</dt><dd>That carried-forward memory. One fixed-size bundle of numbers holding everything seen so far.</dd></div>
       <div><dt>parallel</dt><dd>Work that can happen at the same time. GPUs are fast <em>only</em> at this; give one sequential work and it idles.</dd></div>
+      <div><dt>gradient</dt><dd>The signal training sends back through the network to say which numbers to nudge, and by how much.</dd></div>
     </dl>
 
     <div class="step">Walk it</div>
     <p>Two problems, and the second is the one that actually killed it.</p>
-    <p><strong>Information decays.</strong> For a fact at token 1 to matter at token 1,000, it has to survive 999 rewrites of one fixed-size memory. It mostly doesn't.</p>
-    <p><strong>You can't use the hardware.</strong> Step 500 needs step 499's output, so no amount of GPU will run them together. Training on a large corpus would have taken years of wall-clock time &mdash; not because the maths was hard, but because it refused to go in parallel.</p>
+    <p><strong>Information decays.</strong> For a fact at token 1 to matter at token 1,000, it has to survive 999 rewrites of one fixed-size memory. It mostly doesn't. Training makes it worse: the gradient that should teach the model &ldquo;token 1 mattered&rdquo; gets multiplied by one factor per step on its way back. If each factor is a little below 1 it <em>vanishes</em> (0.9 multiplied 100 times is 0.00003); a little above 1 and it <em>explodes</em> (1.1 multiplied 100 times is about 13,781). LSTMs, a gated kind of RNN, patched much of this.</p>
+    <p><strong>You can't use the hardware.</strong> Step 500 needs step 499's output, so no amount of GPU will run them together. Training on a large corpus would have taken years of wall-clock time &mdash; not because the maths was hard, but because it refused to go in parallel. LSTMs didn't fix this one: they still read one token at a time.</p>
 
     <div class="gotcha">
       <b>The thing that's easy to get backwards</b>
-      <p>RNNs weren't beaten because they were worse at language. They were beaten because they couldn't be <em>trained big enough to find out</em>.</p>
+      <p>Decay was real, but LSTMs patched most of it. What no recurrent design could patch was the one-token-at-a-time order, so RNNs couldn't be <em>trained big enough to find out</em> how good they might get.</p>
       <p>The transformer's real contribution was removing the sequential dependency during training. Everything else follows from being able to spend a thousand GPUs on one model.</p>
     </div>
 
@@ -733,6 +748,20 @@ python llm-101/02/01_sequential_vs_parallel.py</pre>
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=AWHSZzp96kM&t=210s">CampusX · Problems with RNN</a><span class="wspan">3:30–7:30</span>
+            <p>The long-term dependency problem: the Ghajini analogy, and a fill-in-the-blank sentence whose answer depends on a word from much earlier. An RNN keyboard copes with short sentences and fails on long ones.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=AWHSZzp96kM&t=1020s">CampusX · same video</a><span class="wspan">17:00–26:00</span>
+            <p>Why the gradient from 100 steps back shrinks: a product of 100 factors, each below 1. The captions are rough here, so watch the board.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=AWHSZzp96kM&t=1710s">CampusX · same video</a><span class="wspan">28:30–32:00</span>
+            <p>Exploding gradients, gradient clipping, then &ldquo;move to LSTM.&rdquo; This video never mentions the parallelism problem; for that, see the next link.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=GeoQBNNqIbM&t=60s">CampusX · Positional Encoding</a><span class="wspan">1:00–5:00</span>
+            <p>The parallelism half of this section: an RNN needs 10,000 steps for a 10,000-word PDF, while self-attention handles every word at once.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> long-term dependency problem = information decays · vanishing / exploding gradient = the training signal shrinking or blowing up over many steps · time steps = tokens</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/01_sequential_vs_parallel.py">exercises/llm-101/02/01_sequential_vs_parallel.py</a></p>
@@ -798,12 +827,13 @@ all at once       :    3.33 ms   (4x faster)</pre></div><p class="ex-ans">About 
     <div class="step">Words</div>
     <dl class="words">
       <div><dt>attention</dt><dd>A step where every token looks at every other token, decides how relevant each one is, and mixes them into itself accordingly.</dd></div>
-      <div><dt>weights</dt><dd>The relevance numbers. One per pair of tokens, always adding to 1 for each looking token.</dd></div>
+      <div><dt>weights</dt><dd>The relevance numbers. One per pair of tokens, always adding to 1 for each looking token. Also called <em>attention weights</em> or <em>alignment scores</em>.</dd></div>
     </dl>
 
     <div class="step">Walk it</div>
     <p>The RNN answer was &ldquo;carry a memory forward and hope the animal is still in it.&rdquo; The attention answer is direct: let <code>it</code> look at <em>every</em> token in the sentence at once and take mostly the relevant one.</p>
     <p>Distance stops mattering. Token 900 reaching token 3 is the same single operation as reaching token 899 &mdash; there are no hops to survive.</p>
+    <p>Attention wasn't invented for sentences like this one. It arrived in 2014 for translation, bolted onto RNNs. There the RNN squeezed the whole input sentence into one summary vector before writing the output, and beyond about 25&ndash;30 words that summary overflowed. The fix was to let each output word take a fresh weighted mix of <em>all</em> the input words: to write &ldquo;लाइट&rdquo; for &ldquo;Turn off the lights,&rdquo; look mostly at <code>lights</code>. Transformers kept the mixing and threw away the RNN.</p>
 
     <div class="step rule-step">The rule</div>
     <div class="rule">
@@ -818,6 +848,20 @@ all at once       :    3.33 ms   (4x faster)</pre></div><p class="ex-ans">About 
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=rj5V6q6-XUM&t=210s">CampusX · Attention Mechanism in 1 video</a><span class="wspan">3:30–11:00</span>
+            <p>Why attention exists: the overloaded summary vector, a context that should change at every output word, and how people translate with a moving span of attention. This is the 2014 translation version, where output words look at input words; section 03 is attention within one sentence.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=rj5V6q6-XUM&t=1230s">CampusX · same video</a><span class="wspan">20:30–25:30</span>
+            <p>The maths core: the context for each output word is a weighted sum of the input states, c = &Sigma; &alpha; &middot; h, with 16 weights for 4 input and 4 output words.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=rj5V6q6-XUM&t=2160s">CampusX · same video</a><span class="wspan">36:00–40:00</span>
+            <p>The evidence: translation quality holds up past 30 words with attention, and the weight heatmap lines up &ldquo;European&rdquo; with &ldquo;européenne.&rdquo;</p></li>
+          <li><a href="https://www.youtube.com/watch?v=eMlx5fFNoYc&t=115s">3Blue1Brown · Attention in transformers</a><span class="wspan">1:55–4:29</span>
+            <p>&ldquo;Mole&rdquo; in three phrases starts with the same vector each time; attention is what moves it towards the right meaning, even from far away.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> attention weights &alpha; / alignment score = weights · context vector c = the mix · encoder states and decoder state = the tokens being looked at and the one doing the looking</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/02_what_it_attends_to.py">exercises/llm-101/02/02_what_it_attends_to.py</a></p>
@@ -889,7 +933,7 @@ the     [  0.3    0.3     2.5  ]   <span class="dim">filler word</span>
 river   [  2.6    0.0     0.5  ]   <span class="dim">very water</span>
 bank    [  <span class="hl">1.6    1.6</span>     0.8  ]   <span class="hl">equally both</span></pre></div>
 
-    <p><code>bank</code> is equally water and money. By the end it shouldn't be.</p>
+    <p><code>bank</code> is equally water and money. By the end it shouldn't be. In CampusX's terms, we're turning a <em>static</em> embedding (one vector per word, whatever the context) into a <em>contextual</em> one.</p>
 
     <div class="step">Step 1 &middot; Score</div>
     <p>A <strong>dot product</strong> multiplies two lists position by position and adds the results. Big numbers in the same places give a big score.</p>
@@ -931,12 +975,13 @@ bank on its own        1.60    1.60   <span class="dim">ambiguous</span>
 
     <div class="gotcha">
       <b>Why divide by &radic;4</b>
-      <p>Softmax exaggerates gaps. Skip the divide and <code>bank</code>'s shares become 0.045 / 0.221 / 0.734. Make the scores ten times bigger and they're 0.000 / 0.002 / 0.998 &mdash; the word stops blending and just copies itself. Real models have hundreds of numbers per word, so it matters even more there.</p>
+      <p>Softmax exaggerates gaps. Skip the divide and <code>bank</code>'s shares become 0.045 / 0.221 / 0.734 &mdash; less blending, more copying itself.</p>
+      <p>The real reason is size. The dot product of two random lists of <em>d</em> numbers has a variance of about <em>d</em> (measured: 4.0 at <em>d</em> = 4, 64 at 64, 514 at 512). At 512 numbers a typical score sits about 23 from zero, softmax goes to nearly 1.0 and 0.0, and the small shares stop learning because their gradients vanish. Dividing by &radic;<em>d</em> brings the variance back to 1 at any size. Strictly, <em>d</em> is the length of the <em>key</em> vector; here that's the embedding's four numbers.</p>
     </div>
 
     <div class="gotcha">
       <b>Query, key, value</b>
-      <p>Here each word used its own numbers for everything. A real model first makes three learned versions of each word: a <strong>query</strong> to score with, a <strong>key</strong> to be scored against, and a <strong>value</strong> to mix in. The three steps don't change. That's all Q, K and V mean.</p>
+      <p>Here each word used its own numbers for everything. That version has nothing to learn &mdash; dot product, softmax, average &mdash; so it gives the same blend whatever the task. A real model multiplies each embedding by three learned matrices, W<sub>Q</sub>, W<sub>K</sub> and W<sub>V</sub>, shared by every word, to get a <strong>query</strong> (what this word is looking for), a <strong>key</strong> (what it offers to be matched on) and a <strong>value</strong> (what it hands over if chosen). The names come from a dictionary lookup: <code>d[query]</code> finds the matching key and returns its value. The three steps don't change.</p>
     </div>
 
     <div class="step rule-step">The rule</div>
@@ -952,6 +997,22 @@ bank on its own        1.60    1.60   <span class="dim">ambiguous</span>
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=-tCKPl_8Xb8&t=990s">CampusX · Self Attention in Transformers</a><span class="wspan">16:30–24:30</span>
+            <p>The same three steps on &ldquo;money bank grows&rdquo;: <code>bank</code> dotted with every word, softmax, weighted sum, giving the contextual <code>y_bank</code>. This video never divides by &radic;<em>d</em>; the next-but-one link covers that.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=-tCKPl_8Xb8&t=4230s">CampusX · same video</a><span class="wspan">70:30–78:30</span>
+            <p>Where Q, K and V come from: W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> start random, are learned by backpropagation and are shared by every word. For <em>why</em> three roles, watch 43:30&ndash;51:30 (the dictionary and the matrimonial-site analogy).</p></li>
+          <li><a href="https://www.youtube.com/watch?v=r7mAt0iVqwo&t=1350s">CampusX · Scaled Dot Product Attention</a><span class="wspan">22:30–30:30</span>
+            <p>Why divide at all: variance grows with dimension, softmax goes to 99% and 1%, and the small scores stop learning. Then 43:30&ndash;47:30 for why it is the <em>square root</em>: scaling by <em>c</em> scales variance by <em>c</em>&sup2;.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=5ZgGuujZSbs&t=690s">CampusX · Self Attention Geometric Intuition</a><span class="wspan">11:30–19:30</span>
+            <p>The same steps drawn as arrows in 2-D on &ldquo;money bank&rdquo;: the mix pulls <code>bank</code> towards <code>money</code> like gravity. His numbers are declared hypothetical, so take the picture, not the values.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=eMlx5fFNoYc&t=269s">3Blue1Brown · Attention in transformers</a><span class="wspan">4:29–10:55</span>
+            <p>Queries and keys as a grid of dot products, softmaxed into the &ldquo;attention pattern.&rdquo; Then 13:00&ndash;15:35 for values. One difference: he <em>adds</em> the mix to the original embedding as a change, rather than replacing it. Real transformers do it his way (a residual connection).</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> attention weights / attention pattern = shares · contextual embedding = the new <code>bank</code> · static embedding = the starting numbers · similarity score = score · <em>d<sub>k</sub></em> = length of the key vector</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/03_self_attention.py">exercises/llm-101/02/03_self_attention.py</a></p>
@@ -1012,12 +1073,13 @@ to get "<span class="hl">were</span>" right, you need:
 
     <div class="step">Words</div>
     <dl class="words">
-      <div><dt>head</dt><dd>One complete attention calculation with its own weights. A model runs many side by side.</dd></div>
-      <div><dt>multi-head attention</dt><dd>Running <em>H</em> heads in parallel over the same tokens and joining the results.</dd></div>
+      <div><dt>head</dt><dd>One complete attention calculation with its own W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>. A model runs many side by side.</dd></div>
+      <div><dt>multi-head attention</dt><dd>Running <em>H</em> heads in parallel over the same tokens, joining their outputs, and mixing them with one more learned matrix, W<sub>O</sub>.</dd></div>
     </dl>
 
     <div class="step">Walk it</div>
-    <p>Rather than one attention over all 4,096 dimensions, split into (say) 32 heads of 128 dimensions each. Every head does the full score-soften-mix on its own slice, and the outputs are stitched back together.</p>
+    <p>Take a model with 4,096 numbers per token and 32 heads. Each head multiplies the <em>full</em> vector by its own learned W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>, projecting it down to 128 numbers, and runs the whole score-soften-mix in that smaller space. The 32 outputs of 128 are joined back into 4,096, and W<sub>O</sub> mixes them into the final result. The original paper did the same with 512 numbers and 8 heads of 64; GPT-3 uses 96 heads of 128.</p>
+    <p>The exercise below fakes the projection by handing each head a fixed slice of the numbers, so you can see the effect. Real heads each see the whole vector, through weights they learn.</p>
     <p>Because each head has its own weights, each is free to learn a different notion of &ldquo;relevant.&rdquo; When people inspect trained models they find heads that track grammatical subjects, heads that match quotes to speakers, heads that mostly look at the previous token.</p>
     <p>Note what this doesn't cost: 32 heads of 128 dims is the same total width as 1 head of 4,096. You get several relationships for roughly the price of one.</p>
 
@@ -1028,7 +1090,7 @@ to get "<span class="hl">were</span>" right, you need:
 
     <div class="step rule-step">The rule</div>
     <div class="rule">
-      <p>One head produces one blend, so it can capture one kind of relationship. Multi-head attention runs many in parallel over slices of the same vector, letting a token gather several different things at once.</p>
+      <p>One head produces one blend, so it can capture one kind of relationship. Multi-head attention runs many in parallel, each through its own learned projection of the same vector, letting a token gather several different things at once.</p>
     </div>
 
     <div class="check">
@@ -1039,6 +1101,20 @@ to get "<span class="hl">were</span>" right, you need:
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=bX2QwpjsmuA&t=390s">CampusX · Multi-head Attention</a><span class="wspan">6:30–11:20</span>
+            <p>&ldquo;The man saw the astronomer with a telescope&rdquo; has two readings, but one head builds only one table of who relates to whom. His version of &ldquo;one row can&rsquo;t point three places.&rdquo;</p></li>
+          <li><a href="https://www.youtube.com/watch?v=bX2QwpjsmuA&t=1680s">CampusX · same video</a><span class="wspan">28:00–34:30</span>
+            <p>The paper&rsquo;s version: 512 numbers into 8 heads of 64 through learned projections, joined back to 512, then W<sub>O</sub>, and why that costs the same as one full-width head.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=bX2QwpjsmuA&t=2100s">CampusX · same video</a><span class="wspan">35:00–37:45</span>
+            <p>A visualiser: one head links &ldquo;man&rdquo; to &ldquo;telescope,&rdquo; the next links &ldquo;astronomer&rdquo; to it. He says &ldquo;maybe,&rdquo; which fits the gotcha above.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=eMlx5fFNoYc&t=1159s">3Blue1Brown · Attention in transformers</a><span class="wspan">19:19–21:55</span>
+            <p>Why different kinds of context need different heads (&ldquo;wizard&rdquo; near Harry against &ldquo;Queen&rdquo; near Harry), and GPT-3 running 96 heads per block.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> perspective = kind of relationship · linear projection = each head&rsquo;s own W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> · concatenate, then the output matrix W<sub>O</sub> = joining the heads</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/04_two_heads.py">exercises/llm-101/02/04_two_heads.py</a></p>
@@ -1099,7 +1175,7 @@ bank    0.14  0.31  0.56    bank    0.14  0.31  0.56
     <dl class="words">
       <div><dt>encoder</dt><dd>Every token sees the whole sequence, both directions. Good for <em>understanding</em> text you already have.</dd></div>
       <div><dt>decoder</dt><dd>Each token sees only itself and what came before. Necessary for <em>generating</em>, where the future doesn't exist yet.</dd></div>
-      <div><dt>causal mask</dt><dd>The block that enforces &ldquo;left only.&rdquo; Literally setting the forbidden scores to minus infinity before the softmax.</dd></div>
+      <div><dt>causal mask</dt><dd>The block that enforces &ldquo;left only&rdquo;: a matrix of 0s and minus infinity, added to the scores after the &radic;<em>d</em> divide and before the softmax, which turns minus infinity into exactly 0. Zeroing shares <em>after</em> the softmax would break the add-to-1 rule.</dd></div>
     </dl>
 
     <div class="step">Walk it</div>
@@ -1109,16 +1185,17 @@ bank    0.14  0.31  0.56    bank    0.14  0.31  0.56
 
     <div class="tbl-hold">
     <table>
-      <thead><tr><th>Family</th><th>Sees</th><th>Good at</th><th>Examples</th></tr></thead>
+      <thead><tr><th>Family</th><th>Sees</th><th>Trained to</th><th>Good at</th><th>Examples</th></tr></thead>
       <tbody>
-        <tr><td>Encoder-only</td><td>everything</td><td>classifying, embedding</td><td class="mono">BERT, e5</td></tr>
-        <tr><td>Decoder-only</td><td>left only</td><td>generating text</td><td class="mono">GPT, Claude, Llama</td></tr>
-        <tr><td>Encoder-decoder</td><td>both, in two stacks</td><td>fixed input → output</td><td class="mono">T5, BART</td></tr>
+        <tr><td>Encoder-only</td><td>everything</td><td>fill in hidden words</td><td>classifying, embedding</td><td class="mono">BERT, e5</td></tr>
+        <tr><td>Decoder-only</td><td>left only</td><td>predict the next token</td><td>generating text</td><td class="mono">GPT, Claude, Llama</td></tr>
+        <tr><td>Encoder-decoder</td><td>both, in two stacks</td><td>rebuild hidden spans</td><td>fixed input → output</td><td class="mono">T5, BART</td></tr>
       </tbody>
     </table>
     </div>
 
     <p>This is the &sect;1 split again, seen from underneath. Representation models are encoders; generative models are decoders. The mask is the mechanism.</p>
+    <p>The encoder-decoder's decoder has one extra attention step, <strong>cross-attention</strong>: its queries come from the output being written, its keys and values from the encoder's reading of the input. That's the translation setup from section 02.</p>
 
     <div class="step rule-step">The rule</div>
     <div class="rule">
@@ -1128,11 +1205,23 @@ bank    0.14  0.31  0.56    bank    0.14  0.31  0.56
     <div class="check">
       <p class="q">Why can't a generative model just use an encoder and see everything?</p>
       <details><summary>Show answer</summary>
-        <div class="ans">Because during training it would <strong>see the answer</strong>. Predicting token 5 while able to look at token 5 is not a task &mdash; it's copying, and it teaches nothing usable at generation time, when nothing to the right exists.</div>
+        <div class="ans">Because during training it would <strong>see the answer</strong>. Predicting token 5 while able to look at token 5 is not a task &mdash; it's copying, and it teaches nothing usable at generation time, when nothing to the right exists. CampusX calls this <em>data leakage</em>.</div>
       </details>
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=eMlx5fFNoYc&t=660s">3Blue1Brown · Attention in transformers</a><span class="wspan">11:00–12:40</span>
+            <p>Why the mask exists (training predicts every next token in a passage at once, and later words would give the answer away) and why it is minus infinity before softmax rather than 0 after.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=m6onaKFzF94&t=3300s">CampusX · Masked Self Attention</a><span class="wspan">55:00–59:00</span>
+            <p>A 3&times;3 mask worked by hand on &ldquo;आप कैसे हैं&rdquo;: which weights must be zero, the 0 / minus-infinity matrix, and softmax turning minus infinity into 0.</p></li>
+          <li><a href="https://huggingface.co/learn/llm-course/chapter1/6#encoder-models">Hugging Face LLM Course · Transformer architectures</a><span class="wspan">read</span>
+            <p>The three families with their training objectives, model examples, and a table of which family suits which task.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> auto-encoding model = encoder-only · auto-regressive model = decoder-only · sequence-to-sequence = encoder-decoder · masked self-attention = attention with a causal mask · data leakage = seeing the answer</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/05_masks.py">exercises/llm-101/02/05_masks.py</a></p>
@@ -1198,7 +1287,7 @@ encoder-style — hide about 15% and predict those
 
     <div class="step">Walk it</div>
     <p>Three reasons, in the order they matter.</p>
-    <p><strong>More signal per token.</strong> The numbers above. When text is the scarce resource, 6.7&times; is decisive.</p>
+    <p><strong>More signal per token.</strong> The numbers above. When text is the scarce resource, 6.7&times; is decisive. What makes all 511 happen in <em>one</em> pass is the mask from section 05 plus <strong>teacher forcing</strong>: during training, each position's input is the true previous token from the data, not the model's own guess, so every input is known up front and all positions run at once. Without that, a 300-token target would need 301 passes one after another (CampusX's count).</p>
     <p><strong>One design does every job.</strong> Any task can be phrased as text completion &mdash; classify, translate, summarise. An encoder needs a task-specific head bolted on; a decoder just needs a different prompt.</p>
     <p><strong>Simplicity scales.</strong> One stack, one objective, one mask. Fewer moving parts to tune when a training run costs eight figures.</p>
 
@@ -1221,6 +1310,20 @@ encoder-style — hide about 15% and predict those
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=m6onaKFzF94&t=1650s">CampusX · Masked Self Attention</a><span class="wspan">27:30–35:00</span>
+            <p>Teacher forcing, why sequential training would be slow (301 passes for 300 words), and why teacher forcing lets training run in parallel. His model is an encoder-decoder for translation; the same trick trains decoder-only LLMs.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=m6onaKFzF94&t=1350s">CampusX · same video</a><span class="wspan">22:30–25:00</span>
+            <p>Why generation can&rsquo;t do that: each word waits for the last, and one wrong word (&ldquo;मैं घटिया हूं&rdquo;) gets fed forward.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=m6onaKFzF94&t=2610s">CampusX · same video</a><span class="wspan">43:30–49:00</span>
+            <p>The catch: run in parallel naively and each word sees the future (&ldquo;data leakage&rdquo;). The mask in section 05 is the fix.</p></li>
+          <li><a href="https://huggingface.co/learn/llm-course/chapter1/6#modern-large-language-models-llms">Hugging Face LLM Course · Modern LLMs</a><span class="wspan">read</span>
+            <p>States that most modern LLMs are decoder-only, trained in two phases (pretraining, then instruction tuning). It gives no reasons; the three above are this note&rsquo;s.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> autoregressive at inference, non-autoregressive at training (CampusX) = generation serial, training parallel · teacher forcing = feeding the true previous token during training</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/06_training_signal.py">exercises/llm-101/02/06_training_signal.py</a></p>
@@ -1278,17 +1381,22 @@ ratio                                  : 6.5x</pre></div><p class="ex-ans"><stro
     </dl>
 
     <div class="step">Walk it</div>
-    <p>The original fix was to add a fixed wave pattern to each token &mdash; different frequencies, so every position gets a unique fingerprint:</p>
+    <p>Why not just number the tokens 1, 2, 3? CampusX walks through why each simple idea fails. Raw counts grow without limit (a book reaches 100,000), and training hates huge numbers. Dividing by the length fixes the size but makes position 2 worth 1.0 in a two-word sentence and 0.5 in a four-word one. A single sine wave stays between &minus;1 and 1 but repeats, so two positions can collide.</p>
+    <p>The original paper's answer: pairs of sine and cosine waves, each pair slower than the last, <strong>added</strong> to the embedding rather than glued on (gluing would double its size):</p>
+
+    <div class="showcase"><pre>PE(pos, 2i)   = sin(pos / 10000<sup>2i/d</sup>)
+PE(pos, 2i+1) = cos(pos / 10000<sup>2i/d</sup>)      <span class="dim">pos starts at 0</span></pre></div>
 
     <div class="showcase"><pre>position   0:  +0.000 +1.000 +0.000 +1.000
 position   1:  +0.841 +0.540 +0.100 +0.995
 position   2:  +0.909 -0.416 +0.199 +0.980
 position  50:  -0.262 +0.965 -0.959 +0.284</pre></div>
-    <p class="caption-note">Real sinusoidal values. Modern models mostly use a rotation-based variant (RoPE), but the job is the same.</p>
+    <p class="caption-note">Real values for <em>d</em> = 8, first four numbers shown.</p>
+    <p>The pairs have a useful property. Moving from any position to the one <em>k</em> steps later is the same fixed rotation of each sine&ndash;cosine pair, wherever you start, so &ldquo;<em>k</em> tokens apart&rdquo; looks the same everywhere. Modern models build directly on that: RoPE rotates the query and key vectors by position instead of adding numbers to the embedding.</p>
 
     <div class="gotcha">
       <b>Why context windows cost so much</b>
-      <p>Every token attends to every token, so the work grows with the <strong>square</strong> of the length. Double the context and attention gets four times more expensive; ten times the context is a hundred times the attention cost.</p>
+      <p>Every token attends to every token, so the attention pattern has length<sup>2</sup> entries and the work grows with the <strong>square</strong> of the length. Double the context and attention gets four times more expensive; ten times the context is a hundred times the attention cost.</p>
       <p>That quadratic is why long context was hard for years, and why a million-token window is an engineering achievement rather than a bigger number in a config file.</p>
     </div>
 
@@ -1305,6 +1413,22 @@ position  50:  -0.262 +0.965 -0.959 +0.284</pre></div>
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=GeoQBNNqIbM&t=300s">CampusX · Positional Encoding</a><span class="wspan">5:00–7:30</span>
+            <p>Why position is needed: &ldquo;Nitish killed lion&rdquo; and &ldquo;Lion killed Nitish&rdquo; look identical to self-attention. The same point as dog and man above.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=GeoQBNNqIbM&t=1230s">CampusX · same video</a><span class="wspan">20:30–34:00</span>
+            <p>From one sine wave to sine&ndash;cosine pairs at falling frequencies, and why uniqueness forces the pairs. (8:30&ndash;20:30 covers counting and normalising if you want the whole build-up.)</p></li>
+          <li><a href="https://www.youtube.com/watch?v=GeoQBNNqIbM&t=2040s">CampusX · same video</a><span class="wspan">34:00–40:30</span>
+            <p>Add, don&rsquo;t concatenate, and why. Then 47:30&ndash;54:30 for the formula, worked by hand: <code>river</code> at position 0 becomes [0, 1, 0, 1, 0, 1].</p></li>
+          <li><a href="https://www.youtube.com/watch?v=GeoQBNNqIbM&t=3840s">CampusX · same video</a><span class="wspan">64:00–71:00</span>
+            <p>The relative-position property: one matrix moves any position by the same offset, which is why sine and cosine come as a pair. He points to Timo Denk&rsquo;s blog for the maths. He doesn&rsquo;t mention RoPE.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=eMlx5fFNoYc&t=745s">3Blue1Brown · Attention in transformers</a><span class="wspan">12:25–12:55</span>
+            <p>Thirty seconds: the attention pattern has context-size-squared entries, which is why long context is hard.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> <em>d</em><sub>model</sub> = numbers per token · absolute vs relative position = where a token is vs how far apart two tokens are · context size = context window</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/07_position.py">exercises/llm-101/02/07_position.py</a></p>
@@ -1388,10 +1512,16 @@ with caching — keep what you already computed
       <p>Every simultaneous conversation needs its own. Serving 100 users at 8k context is <strong>100 GiB</strong> of cache before the model weights. This, not the weights, is usually what limits how many users a GPU can serve.</p>
     </div>
 
+    <div class="gotcha">
+      <b>The same trick across requests: prompt caching</b>
+      <p>Providers also keep the cache for a prompt <em>prefix</em> that many requests share, such as a long system prompt, and bill later hits cheaply. CampusX's example is a text-to-SQL feature: 400 tokens in, 100 out, 50,000 times a day, at the video's prices of $10 per million input tokens and $50 per million output. That's $0.009 a query. If 350 of the 400 input tokens are a cached prefix billed at $1 per million, it drops to $0.00585, 35% less.</p>
+      <p>The first write costs extra ($12.50 per million), and the cache expires after 5 minutes unless it's hit again. It barely helps RAG, where most of the prompt changes on every request.</p>
+    </div>
+
     <div class="step rule-step">The rule</div>
     <div class="rule">
       <p>The KV cache stores each token's attention values once instead of recomputing them every step &mdash; trading memory for a roughly 500&times; reduction in work on a long answer.</p>
-      <p>It's why generation is memory-bound rather than compute-bound, and why context length shows up on your bill twice.</p>
+      <p>It's why generation is memory-bound rather than compute-bound, and why context length shows up on your bill twice. Kept across requests for a shared prefix, the same cache is what prompt caching sells.</p>
     </div>
 
     <div class="check">
@@ -1402,6 +1532,20 @@ with caching — keep what you already computed
     </div>
   </div>
   <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=RG5A-W3eMHI&t=1560s">CampusX · Selecting the Right LLM</a><span class="wspan">26:00–30:30</span>
+            <p>The per-query cost calculation, from token counts and prices to a monthly bill against a budget.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=RG5A-W3eMHI&t=1920s">CampusX · same video</a><span class="wspan">32:00–38:00</span>
+            <p>Prompt caching: the shared prefix, write against hit prices, 5-minute against 1-hour caches, and why RAG gains little. At about 37:00 he names the KV cache as the mechanism underneath. He doesn&rsquo;t teach the cache itself; this section does.</p></li>
+          <li><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Claude docs · Prompt caching</a><span class="wspan">read</span>
+            <p>How prompt caching works in the Claude API: what counts as the cached prefix, how long it lives, and the price multipliers for writes and hits.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=eMlx5fFNoYc&t=450s">3Blue1Brown · Attention in transformers</a><span class="wspan">7:30–10:30</span>
+            <p>Each token&rsquo;s key vector being computed and compared. Keys and values are exactly what the cache stores.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> input / output tokens = prefill / decode · prompt caching = the KV cache kept across requests for a shared prefix · cache write / cache hit = the first request pays extra, later ones pay less</p>
+      </div>
       <div class="step do-step">Do it</div>
       <div class="exercise">
         <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/llm-101/02/08_kv_cache.py">exercises/llm-101/02/08_kv_cache.py</a></p>
