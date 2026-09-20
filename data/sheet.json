@@ -1,6 +1,6 @@
 {
   "sheet_url": "https://docs.google.com/spreadsheets/d/1bSrH0n1m4t42yl7-aHD9iAY8NPxEiCqAY8l8pUNkH3g/edit",
-  "webapp_url": "http://127.0.0.1:8778/exec",
+  "webapp_url": "https://script.google.com/macros/s/AKfycby_kiIuuXT2pcuhqr71JrcjJMl7EbmarOZ6tGngcK-x2TL0A_HgU17r7-GCbkSAzP1V/exec",
   "token": "",
   "note": "the sheet key lives in your browser only; paste it when the page asks. Rotate it in the Apps Script if it leaks."
 }
