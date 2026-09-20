@@ -26,7 +26,7 @@
 var TOKEN = 'change-me';
 var STATUS_COL = 2;   // B
 var KIND_COL = 9;     // I, the hidden helper column
-var ALLOWED = ['Not started', 'In progress', 'Done', 'Skipped'];
+var ALLOWED = ['Not started', 'In progress', 'Done', 'Revisit', 'Skipped'];   // matches the sheet's dropdown
 
 function doGet(e) {
   if (!e || e.parameter.token !== TOKEN) return reply({ error: 'bad token' });
