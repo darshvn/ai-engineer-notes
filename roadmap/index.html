@@ -154,6 +154,9 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
 
   function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
 
+  // A cell in the sheet could hold javascript: or data: — only let http(s) through.
+  function safeUrl(u) { return /^https?:\/\//i.test(String(u || '')) ? String(u) : ''; }
+
   // A note page exists for some sections; its sections follow the item order.
   function notePage(topicName, sectionName, indexInSection) {
     var m = /^(\d+)\./.exec(sectionName);
@@ -166,12 +169,13 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
   function itemHTML(item, trackName, topicName, sectionName, idx) {
     var cls = item.status === 'Done' ? ' done' : item.status === 'Skipped' ? ' skip' : '';
     var links = '';
-    if (item.resource && item.resource.url) {
+    var url = item.resource && safeUrl(item.resource.url), also = safeUrl(item.also);
+    if (url) {
       var label = item.resource.type === 'video' ? 'Watch' : 'Read';
-      links += '<a class="pill primary" href="' + esc(item.resource.url) + '" target="_blank" rel="noopener" title="' +
+      links += '<a class="pill primary" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer" title="' +
         esc(item.resource.label || '') + '">' + label + '</a>';
     }
-    if (item.also) links += '<a class="pill" href="' + esc(item.also) + '" target="_blank" rel="noopener">Also</a>';
+    if (also) links += '<a class="pill" href="' + esc(also) + '" target="_blank" rel="noopener noreferrer">Also</a>';
     var np = item.kind === 'item' ? notePage(topicName, sectionName, idx) : null;
     if (np) links += '<a class="pill note-page" href="' + np + '">Note page</a>';
     if (item.note) links += '<button class="pill note-btn" type="button" aria-expanded="false">Note</button>';
@@ -309,11 +313,19 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
   function saveLocal(map) {
     try { localStorage.setItem(STORE, JSON.stringify(map)); } catch (e) {}
   }
-  // The sheet's token is the site password, typed once and kept on this device,
-  // so it never appears in the repo.
+  // The sheet key is a random token set in the Apps Script. It is never
+  // committed: you paste it once and it stays in this browser.
+  var KEYSTORE = 'aen-sheet-key';
   function token() {
     if (config && config.token) return config.token;
-    try { return localStorage.getItem('aen-gate-key') || ''; } catch (e) { return ''; }
+    try { return sessionStorage.getItem(KEYSTORE) || localStorage.getItem(KEYSTORE) || ''; }
+    catch (e) { return ''; }
+  }
+  function askForKey() {
+    var entered = window.prompt('Sheet key (from the Apps Script). Leave empty to keep progress in this browser only.');
+    if (!entered) return '';
+    try { localStorage.setItem(KEYSTORE, entered.trim()); } catch (e) {}
+    return entered.trim();
   }
 
   function say(text, warn) {
@@ -414,9 +426,14 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
     });
     refreshCounts();
 
-    if (config.webapp_url) {
+    if (config.webapp_url && !token()) askForKey();
+    if (config.webapp_url && token()) {
       say('reading the sheet…');
-      fetch(config.webapp_url + '?token=' + encodeURIComponent(token()))
+      fetch(config.webapp_url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ token: token(), action: 'read' })
+      })
         .then(function (r) { return r.json(); })
         .then(function (res) {
           if (res.error) throw new Error(res.error);
@@ -430,7 +447,10 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
           refreshCounts();
           say('in step with the sheet · ' + n + ' updated');
         })
-        .catch(function (err) { say('sheet unreachable, using this browser (' + err.message + ')', true); });
+        .catch(function (err) {
+          if (/bad token/.test(err.message)) { try { localStorage.removeItem(KEYSTORE); } catch (e) {} }
+          say('sheet unreachable, using this browser (' + err.message + ')', true);
+        });
     } else {
       say('progress saved in this browser only');
     }
@@ -439,7 +459,7 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
     var sheetUrl = config.sheet_url || data.sheet_url;
     if (sheetUrl) {
       var a = document.getElementById('sheet');
-      a.href = sheetUrl; a.target = '_blank'; a.rel = 'noopener'; a.hidden = false;
+      a.href = safeUrl(sheetUrl); a.target = '_blank'; a.rel = 'noopener noreferrer'; a.hidden = false;
     }
     apply();
     if (location.hash.indexOf('#row-') === 0) {

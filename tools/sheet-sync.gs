@@ -7,14 +7,16 @@
  * Setup
  *  1. Open the sheet → Extensions → Apps Script. Delete whatever is there and
  *     paste this file in.
- *  2. Change TOKEN below to any word you like.
+ *  2. Put the long random token I generated into TOKEN below. Don't reuse the
+ *     site password: this one authorises writes to your sheet.
  *  3. Deploy → New deployment → type "Web app".
  *       Execute as: Me
  *       Who has access: Anyone
  *     Authorise it when Google asks, then copy the /exec URL.
- *  4. Send that URL and the token to the site: put them in data/sheet.json.
+ *  4. Open the roadmap page and paste the token when it asks. It is kept for
+ *     that browser only and never committed to the repo.
  *
- * Read   GET  <url>?token=…                → {"Basics":{"5":"Done",…},…}
+ * Read   POST <url>  {"token":"…","action":"read"}
  * Write  POST <url>  {"token":"…","updates":[{"sheet":"Basics","row":5,"status":"Done"}]}
  *
  * Worth knowing: "Who has access: Anyone" means anyone holding the URL can
@@ -23,13 +25,18 @@
  * the URL any time.
  */
 
-var TOKEN = 'change-me';
+var TOKEN = 'paste-the-long-random-token-here';
 var STATUS_COL = 2;   // B
 var KIND_COL = 9;     // I, the hidden helper column
 var ALLOWED = ['Not started', 'In progress', 'Done', 'Revisit', 'Skipped'];   // matches the sheet's dropdown
 
 function doGet(e) {
-  if (!e || e.parameter.token !== TOKEN) return reply({ error: 'bad token' });
+  // Reads happen through doPost so the token never travels in a URL, where it
+  // would land in the execution log, browser history and referer headers.
+  return reply({ error: 'post instead' });
+}
+
+function readStatuses() {
   var out = {};
   SpreadsheetApp.getActive().getSheets().forEach(function (sheet) {
     var last = sheet.getLastRow();
@@ -43,7 +50,7 @@ function doGet(e) {
     });
     out[sheet.getName()] = statuses;
   });
-  return reply({ statuses: out, read: new Date().toISOString() });
+  return out;
 }
 
 function doPost(e) {
@@ -54,6 +61,7 @@ function doPost(e) {
     return reply({ error: 'bad json' });
   }
   if (body.token !== TOKEN) return reply({ error: 'bad token' });
+  if (body.action === 'read') return reply({ statuses: readStatuses(), read: new Date().toISOString() });
 
   var book = SpreadsheetApp.getActive(), done = 0, skipped = [];
   (body.updates || []).forEach(function (u) {
