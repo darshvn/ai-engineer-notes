@@ -76,6 +76,11 @@ details.topic[open]>summary::before{content:"\25BE"}
 .pill.primary{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
 .pill.note-btn{border-color:var(--signal);color:var(--signal);background:var(--signal-dim);cursor:pointer}
 .pill.note-page{border-color:var(--signal);color:var(--signal)}
+.pill.status{cursor:pointer;min-width:74px;text-align:center}
+.pill.status[data-status="Done"]{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);font-weight:600}
+.pill.status[data-status="In progress"]{border-color:var(--signal);color:var(--signal);background:var(--signal-dim)}
+#sync{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+#sync.warn{color:var(--signal)}
 .meta{font-family:var(--f-mono);font-size:11px;color:var(--muted);white-space:nowrap}
 .note{margin:8px 0 2px;padding:10px 14px;border-left:3px solid var(--signal);background:var(--surface);
   font-size:15px;color:var(--ink);max-width:78ch}
@@ -106,6 +111,7 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
 
 <footer>
   <span id="src"></span>
+  <span id="sync"></span>
   <a href="../">Notes</a>
   <a id="sheet" hidden>Open the sheet</a>
 </footer>
@@ -168,6 +174,11 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
     var np = item.kind === 'item' ? notePage(topicName, sectionName, idx) : null;
     if (np) links += '<a class="pill note-page" href="' + np + '">Note page</a>';
     if (item.note) links += '<button class="pill note-btn" type="button" aria-expanded="false">Note</button>';
+    if (item.kind === 'item') {
+      var st = item.status || 'Not started';
+      links = '<button class="pill status" type="button" data-status="' + esc(st) + '" ' +
+        'title="Click to change status">' + esc(st === 'Not started' ? 'To do' : st) + '</button>' + links;
+    }
 
     var meta = [];
     if (item.hours) meta.push(item.hours + ' h');
@@ -196,11 +207,12 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
         });
       });
       var pct = all.length ? Math.round(done / all.length * 100) : 0;
-      bars += '<div class="bar"><div class="lab"><span>' + esc(track.name) + '</span>' +
-        '<span><b>' + done + '</b> / ' + all.length + ' · ' + pct + '%</span></div>' +
+      bars += '<div class="bar" data-bar="' + slug(track.name) + '"><div class="lab"><span>' + esc(track.name) + '</span>' +
+        '<span class="bar-count"><b>' + done + '</b> / ' + all.length + ' · ' + pct + '%</span></div>' +
         '<div class="track-bar"><i style="width:' + pct + '%"></i></div></div>';
 
-      html += '<h2 class="crumb" style="display:block;margin:28px 0 0">' + esc(track.name) + '</h2>';
+      html += '<section class="track" data-track="' + slug(track.name) + '" data-name="' + esc(track.name) + '">' +
+        '<h2 class="crumb" style="display:block;margin:28px 0 0">' + esc(track.name) + '</h2>';
       track.topics.forEach(function (topic) {
         var tItems = 0, tDone = 0, dates = [];
         topic.sections.forEach(function (s) {
@@ -226,6 +238,7 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
         });
         html += '</details>';
       });
+      html += '</section>';
     });
     document.getElementById('bars').innerHTML = bars;
     tree.innerHTML = html;
@@ -285,10 +298,94 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
 
+  // ---------- progress: kept in the browser, and in the sheet when it is wired up
+  var STATUSES = ['Not started', 'In progress', 'Done', 'Skipped'];
+  var STORE = 'aen-progress', config = null, queue = [], syncEl = document.getElementById('sync');
+
+  function local() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) { return {}; }
+  }
+  function saveLocal(map) {
+    try { localStorage.setItem(STORE, JSON.stringify(map)); } catch (e) {}
+  }
+  function say(text, warn) {
+    if (!syncEl) return;
+    syncEl.textContent = text;
+    syncEl.classList.toggle('warn', !!warn);
+  }
+
+  function paint(el) {
+    var item = el.__item, st = item.status || 'Not started';
+    var btn = el.querySelector('.status'), dot = el.querySelector('.dot');
+    if (btn) {
+      btn.dataset.status = st;
+      btn.textContent = st === 'Not started' ? 'To do' : st;
+    }
+    dot.className = 'dot' + (st === 'Done' ? ' done' : st === 'Skipped' ? ' skip' : '');
+  }
+
+  function refreshCounts() {
+    [].forEach.call(document.querySelectorAll('section.track'), function (sec) {
+      var rows = sec.querySelectorAll('.item[data-kind="item"]');
+      var done = sec.querySelectorAll('.item[data-kind="item"] .status[data-status="Done"]').length;
+      var pct = rows.length ? Math.round(done / rows.length * 100) : 0;
+      var bar = document.querySelector('.bar[data-bar="' + sec.dataset.track + '"]');
+      if (bar) {
+        bar.querySelector('.bar-count').innerHTML = '<b>' + done + '</b> / ' + rows.length + ' · ' + pct + '%';
+        bar.querySelector('.track-bar i').style.width = pct + '%';
+      }
+      [].forEach.call(sec.querySelectorAll('details.topic'), function (d) {
+        var all = d.querySelectorAll('.item[data-kind="item"]').length;
+        var ok = d.querySelectorAll('.item[data-kind="item"] .status[data-status="Done"]').length;
+        var meta = d.querySelector('.topic-meta');
+        meta.textContent = meta.textContent.replace(/^\s*\d+ \/ \d+/, ok + ' / ' + all);
+      });
+    });
+  }
+
+  function push() {
+    if (!config || !config.webapp_url || !queue.length) return;
+    var batch = queue.splice(0, queue.length);
+    say('saving to the sheet…');
+    fetch(config.webapp_url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // keeps the browser from sending a preflight
+      body: JSON.stringify({ token: config.token, updates: batch })
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      if (res.error) throw new Error(res.error);
+      say('saved to the sheet · ' + new Date().toLocaleTimeString());
+    }).catch(function (err) {
+      queue = batch.concat(queue);
+      say('kept in this browser only (' + err.message + ')', true);
+    });
+  }
+
+  function setStatus(el, status) {
+    var item = el.__item;
+    item.status = status;
+    paint(el);
+    refreshCounts();
+    var map = local();
+    map[el.dataset.key] = status;
+    saveLocal(map);
+    queue.push({ sheet: el.closest('section.track').dataset.name, row: item.row, status: status });
+    push();
+  }
+
+  tree.addEventListener('click', function (e) {
+    var btn = e.target.closest('.status');
+    if (!btn) return;
+    var el = btn.closest('.item');
+    var next = STATUSES[(STATUSES.indexOf(el.__item.status || 'Not started') + 1) % STATUSES.length];
+    setStatus(el, next);
+  });
+
   Promise.all([
     fetch('../data/roadmap.json').then(function (r) { return r.json(); }),
-    fetch('../data/notes.json').then(function (r) { return r.json(); }).catch(function () { return { notes: [] }; })
+    fetch('../data/notes.json').then(function (r) { return r.json(); }).catch(function () { return { notes: [] }; }),
+    fetch('../data/sheet.json').then(function (r) { return r.json(); }).catch(function () { return {}; })
   ]).then(function (both) {
+    config = both[2] || {};
     var data = both[0];
     both[1].notes.forEach(function (n) { notesByKey[n.topic + '#' + n.section] = n.path; });
     render(data);
@@ -302,10 +399,39 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
       }); });
     });
     items.forEach(function (el) { el.__item = flat[el.dataset.key]; });
+    // the browser's own record wins over the exported snapshot
+    var stored = local();
+    items.forEach(function (el) {
+      if (el.__item && stored[el.dataset.key]) { el.__item.status = stored[el.dataset.key]; paint(el); }
+    });
+    refreshCounts();
+
+    if (config.webapp_url) {
+      say('reading the sheet…');
+      fetch(config.webapp_url + '?token=' + encodeURIComponent(config.token || ''))
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (res.error) throw new Error(res.error);
+          var n = 0;
+          items.forEach(function (el) {
+            var sheet = el.closest('section.track').dataset.name;
+            var st = res.statuses[sheet] && res.statuses[sheet][el.__item.row];
+            if (st && st !== el.__item.status) { el.__item.status = st; paint(el); n++; }
+          });
+          saveLocal({});                     // the sheet is the record now
+          refreshCounts();
+          say('in step with the sheet · ' + n + ' updated');
+        })
+        .catch(function (err) { say('sheet unreachable, using this browser (' + err.message + ')', true); });
+    } else {
+      say('progress saved in this browser only');
+    }
+
     document.getElementById('src').textContent = 'From ' + data.source + ', exported ' + data.generated;
-    if (data.sheet_url) {
+    var sheetUrl = config.sheet_url || data.sheet_url;
+    if (sheetUrl) {
       var a = document.getElementById('sheet');
-      a.href = data.sheet_url; a.hidden = false;
+      a.href = sheetUrl; a.target = '_blank'; a.rel = 'noopener'; a.hidden = false;
     }
     apply();
     if (location.hash.indexOf('#row-') === 0) {
