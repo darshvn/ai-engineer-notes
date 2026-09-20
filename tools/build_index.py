@@ -176,12 +176,13 @@ def build_index(structure, notes):
 <header class="mast">
   <h1>AI Engineer Notes</h1>
   <p class="standfirst">Every idea written out in prose, drawn as the mechanism it actually is, and closed with a retrieval bank rather than a summary to re-read.</p>
+  <p class="standfirst"><a href="roadmap/">Open the roadmap</a> &mdash; every item with its resource, second source and note.</p>
 </header>
 {chr(10).join(parts)}
 <footer><span>AI Engineer Notes</span></footer>
 </div>
 {TOGGLE_JS}
-</body>
+<script src="assets/gate.js"></script>\n</body>
 </html>
 """
 

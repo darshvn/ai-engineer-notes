@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Roadmap</title>
+<meta name="description" content="Every topic, section and item with its resource, second source and note, in one searchable page.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
+<style>
+:root{
+  --bg:#E9EBE7; --surface:#F6F7F4; --surface-2:#DFE3DE; --ink:#14181A; --muted:#59635F;
+  --rule:#C9CFC8; --accent:#146B5F; --accent-dim:#DCE8E4; --signal:#9A2C6B; --signal-dim:#F0DEE8;
+  --f-display:"Newsreader",Georgia,serif; --f-body:"IBM Plex Sans",-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; --wide:1100px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121614; --surface:#1A201D; --surface-2:#232A27; --ink:#E6EAE6; --muted:#929F99;
+  --rule:#2E3733; --accent:#56BCAC; --accent-dim:#1C2E2B; --signal:#E982B8; --signal-dim:#33202B;}}
+:root[data-theme="dark"]{
+  --bg:#121614; --surface:#1A201D; --surface-2:#232A27; --ink:#E6EAE6; --muted:#929F99;
+  --rule:#2E3733; --accent:#56BCAC; --accent-dim:#1C2E2B; --signal:#E982B8; --signal-dim:#33202B;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:var(--wide);margin:0 auto;padding:0 24px 96px}
+
+/* ---------- masthead + controls ---------- */
+.mast{padding:40px 0 18px;border-bottom:1px solid var(--rule)}
+.crumb{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);text-decoration:none}
+h1{font-family:var(--f-display);font-weight:500;font-size:clamp(2rem,5vw,2.8rem);margin:12px 0 6px;letter-spacing:-.02em}
+.standfirst{margin:0;color:var(--muted);font-family:var(--f-display);font-size:1.05rem}
+.bars{display:flex;flex-wrap:wrap;gap:10px 22px;margin:18px 0 0}
+.bar{flex:1 1 260px}
+.bar .lab{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:11.5px;color:var(--muted);margin-bottom:5px}
+.bar .lab b{color:var(--ink);font-weight:600}
+.track-bar{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.track-bar i{display:block;height:100%;background:var(--accent)}
+
+.controls{position:sticky;top:0;z-index:20;background:var(--bg);padding:14px 0 12px;border-bottom:1px solid var(--rule);
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.controls input[type=search]{flex:1 1 260px;font:inherit;padding:9px 12px;border:1px solid var(--rule);
+  background:var(--surface);color:var(--ink);border-radius:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:11.5px;padding:5px 10px;border:1px solid var(--rule);background:var(--surface);
+  color:var(--muted);border-radius:99px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);font-weight:600}
+.count{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);margin-left:auto}
+#theme-toggle{font-family:var(--f-mono);font-size:11.5px;padding:5px 10px;border:1px solid var(--rule);
+  background:var(--surface);color:var(--muted);border-radius:99px;cursor:pointer}
+
+/* ---------- tree ---------- */
+details.topic{border-bottom:1px solid var(--rule)}
+details.topic>summary{cursor:pointer;list-style:none;padding:16px 0;display:flex;gap:14px;align-items:baseline}
+details.topic>summary::-webkit-details-marker{display:none}
+details.topic>summary::before{content:"\25B8";color:var(--signal);font-size:12px;line-height:1.6}
+details.topic[open]>summary::before{content:"\25BE"}
+.topic-name{font-family:var(--f-display);font-size:1.35rem;font-weight:500}
+.topic-meta{margin-left:auto;font-family:var(--f-mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+.section{margin:0 0 18px;padding-left:22px}
+.section>h3{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);
+  margin:18px 0 8px;font-weight:600}
+.sub>h4{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:12px 0 6px}
+.item{border-top:1px solid var(--rule);padding:9px 0}
+.item.hidden{display:none}
+.item[data-kind="note"] .item-name,.item[data-kind="link"] .item-name{color:var(--muted)}
+.item[data-kind="note"] .dot{opacity:.35}
+.item-top{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:99px;background:var(--surface-2);flex:0 0 auto;translate:0 -1px}
+.dot.done{background:var(--accent)}
+.dot.skip{background:var(--rule)}
+.item-name{flex:1 1 240px}
+.item-name mark{background:var(--signal-dim);color:inherit}
+.links{display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-family:var(--f-mono);font-size:11px;padding:3px 9px;border-radius:99px;text-decoration:none;
+  border:1px solid var(--rule);color:var(--muted);background:var(--surface);white-space:nowrap}
+.pill.primary{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.pill.note-btn{border-color:var(--signal);color:var(--signal);background:var(--signal-dim);cursor:pointer}
+.pill.note-page{border-color:var(--signal);color:var(--signal)}
+.meta{font-family:var(--f-mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.note{margin:8px 0 2px;padding:10px 14px;border-left:3px solid var(--signal);background:var(--surface);
+  font-size:15px;color:var(--ink);max-width:78ch}
+.note[hidden]{display:none}
+.empty{padding:40px 0;color:var(--muted)}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-family:var(--f-mono);font-size:11.5px;color:var(--muted);
+  display:flex;gap:16px;flex-wrap:wrap}
+@media (max-width:640px){.wrap{padding:0 16px 64px}.topic-meta{margin-left:0;width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="mast">
+  <a class="crumb" href="../">&larr; All notes</a>
+  <h1>Roadmap</h1>
+  <p class="standfirst">Every topic, section and item, with the resource that teaches it, the second source where one helps, and the note that fills the gap.</p>
+  <div class="bars" id="bars"></div>
+</header>
+
+<div class="controls">
+  <input type="search" id="q" placeholder="Search items, resources and notes  ( / )" aria-label="Search">
+  <div class="chips" id="filters"></div>
+  <button id="theme-toggle" type="button">Theme</button>
+  <span class="count" id="count"></span>
+</div>
+
+<main id="tree"><p class="empty">Loading…</p></main>
+
+<footer>
+  <span id="src"></span>
+  <a href="../">Notes</a>
+  <a id="sheet" hidden>Open the sheet</a>
+</footer>
+</div>
+
+<script src="../assets/gate.js"></script>
+<script>
+(function () {
+  var r = document.documentElement, b = document.getElementById('theme-toggle'), K = 'aen-theme';
+  function sysDark() { return !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches); }
+  function apply(t) {
+    t ? r.setAttribute('data-theme', t) : r.removeAttribute('data-theme');
+    b.textContent = (t ? t === 'dark' : sysDark()) ? 'Light' : 'Dark';
+  }
+  var saved = null; try { saved = localStorage.getItem(K); } catch (e) {}
+  apply(saved);
+  b.addEventListener('click', function () {
+    var cur = r.getAttribute('data-theme'), dark = cur ? cur === 'dark' : sysDark(), next = dark ? 'light' : 'dark';
+    apply(next); try { localStorage.setItem(K, next); } catch (e) {}
+  });
+})();
+
+(function () {
+  var tree = document.getElementById('tree'), qbox = document.getElementById('q'),
+      countEl = document.getElementById('count'), filterBox = document.getElementById('filters');
+  var FILTERS = [
+    ['todo', 'To do', function (i) { return i.status !== 'Done' && i.status !== 'Skipped'; }],
+    ['done', 'Done', function (i) { return i.status === 'Done'; }],
+    ['video', 'Video', function (i) { return i.resource && i.resource.type === 'video'; }],
+    ['read', 'Read', function (i) { return i.resource && i.resource.type !== 'video' && i.resource.type !== 'note'; }],
+    ['note', 'Has note', function (i) { return !!i.note; }],
+    ['also', 'Second source', function (i) { return !!i.also; }]
+  ];
+  var active = {}, items = [], notesByKey = {};
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+
+
+  function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+
+  // A note page exists for some sections; its sections follow the item order.
+  function notePage(topicName, sectionName, indexInSection) {
+    var m = /^(\d+)\./.exec(sectionName);
+    if (!m) return null;
+    var key = slug(topicName) + '#' + Number(m[1]);
+    var path = notesByKey[key];
+    return path ? '../' + path + '/#s' + (indexInSection + 1) : null;
+  }
+
+  function itemHTML(item, trackName, topicName, sectionName, idx) {
+    var cls = item.status === 'Done' ? ' done' : item.status === 'Skipped' ? ' skip' : '';
+    var links = '';
+    if (item.resource && item.resource.url) {
+      var label = item.resource.type === 'video' ? 'Watch' : 'Read';
+      links += '<a class="pill primary" href="' + esc(item.resource.url) + '" target="_blank" rel="noopener" title="' +
+        esc(item.resource.label || '') + '">' + label + '</a>';
+    }
+    if (item.also) links += '<a class="pill" href="' + esc(item.also) + '" target="_blank" rel="noopener">Also</a>';
+    var np = item.kind === 'item' ? notePage(topicName, sectionName, idx) : null;
+    if (np) links += '<a class="pill note-page" href="' + np + '">Note page</a>';
+    if (item.note) links += '<button class="pill note-btn" type="button" aria-expanded="false">Note</button>';
+
+    var meta = [];
+    if (item.hours) meta.push(item.hours + ' h');
+    if (item.target) meta.push(item.target);
+
+    var key = slug(trackName) + '-' + item.row;
+    return '<div class="item" data-kind="' + item.kind + '" data-key="' + key + '" id="row-' + key + '">' +
+      '<div class="item-top"><span class="dot' + cls + '"></span>' +
+      '<span class="item-name">' + esc(item.name) +
+      (item.resource && item.resource.label ? '<br><span class="meta">' + esc(item.resource.label) + '</span>' : '') +
+      '</span>' +
+      '<span class="links">' + links + '</span>' +
+      '<span class="meta">' + meta.join(' · ') + '</span></div>' +
+      (item.note ? '<div class="note" hidden>' + esc(item.note) + '</div>' : '') +
+      '</div>';
+  }
+
+  function render(data) {
+    var html = '', bars = '';
+    data.tracks.forEach(function (track) {
+      var all = [], done = 0;
+      track.topics.forEach(function (t) {
+        t.sections.forEach(function (s) {
+          (s.items || []).concat((s.subsections || []).reduce(function (a, x) { return a.concat(x.items); }, []))
+            .forEach(function (i) { if (i.kind === 'item') { all.push(i); if (i.status === 'Done') done++; } });
+        });
+      });
+      var pct = all.length ? Math.round(done / all.length * 100) : 0;
+      bars += '<div class="bar"><div class="lab"><span>' + esc(track.name) + '</span>' +
+        '<span><b>' + done + '</b> / ' + all.length + ' · ' + pct + '%</span></div>' +
+        '<div class="track-bar"><i style="width:' + pct + '%"></i></div></div>';
+
+      html += '<h2 class="crumb" style="display:block;margin:28px 0 0">' + esc(track.name) + '</h2>';
+      track.topics.forEach(function (topic) {
+        var tItems = 0, tDone = 0, dates = [];
+        topic.sections.forEach(function (s) {
+          (s.items || []).forEach(function (i) { if (i.kind === 'item') { tItems++; if (i.status === 'Done') tDone++; if (i.target) dates.push(i.target); } });
+          (s.subsections || []).forEach(function (sub) {
+            sub.items.forEach(function (i) { if (i.kind === 'item') { tItems++; if (i.status === 'Done') tDone++; if (i.target) dates.push(i.target); } });
+          });
+        });
+        dates.sort();
+        html += '<details class="topic"><summary><span class="topic-name">' + esc(topic.name) + '</span>' +
+          '<span class="topic-meta">' + tDone + ' / ' + tItems +
+          (dates.length ? ' · ' + dates[0] + ' → ' + dates[dates.length - 1] : '') + '</span></summary>';
+        topic.sections.forEach(function (section) {
+          html += '<div class="section"><h3>' + esc(section.name) + '</h3>';
+          var n = 0;
+          (section.items || []).forEach(function (i) { html += itemHTML(i, track.name, topic.name, section.name, n); if (i.kind === 'item') n++; });
+          (section.subsections || []).forEach(function (sub) {
+            html += '<div class="sub"><h4>' + esc(sub.name) + '</h4>';
+            sub.items.forEach(function (i) { html += itemHTML(i, track.name, topic.name, section.name, n); if (i.kind === 'item') n++; });
+            html += '</div>';
+          });
+          html += '</div>';
+        });
+        html += '</details>';
+      });
+    });
+    document.getElementById('bars').innerHTML = bars;
+    tree.innerHTML = html;
+    items = [].slice.call(tree.querySelectorAll('.item'));
+  }
+
+  function matches(el, needle) {
+    if (needle && el.textContent.toLowerCase().indexOf(needle) < 0) return false;
+    var keys = Object.keys(active).filter(function (k) { return active[k]; });
+    if (!keys.length) return true;
+    var data = el.__item;
+    if (!data) return false;
+    return keys.every(function (k) {
+      var f = FILTERS.filter(function (x) { return x[0] === k; })[0];
+      return f && f[2](data);
+    });
+  }
+
+  function apply() {
+    var needle = qbox.value.trim().toLowerCase(), shown = 0;
+    items.forEach(function (el) {
+      var ok = matches(el, needle);
+      el.classList.toggle('hidden', !ok);
+      if (ok) shown++;
+    });
+    // open every topic that still has something in it, close the rest
+    [].forEach.call(tree.querySelectorAll('details.topic'), function (d) {
+      var any = d.querySelector('.item:not(.hidden)');
+      if (needle || Object.keys(active).some(function (k) { return active[k]; })) d.open = !!any;
+      d.style.display = any ? '' : 'none';
+    });
+    countEl.textContent = shown + ' of ' + items.length + ' rows';
+  }
+
+  FILTERS.forEach(function (f) {
+    var b = document.createElement('button');
+    b.className = 'chip'; b.type = 'button'; b.textContent = f[1]; b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', function () {
+      active[f[0]] = !active[f[0]];
+      b.setAttribute('aria-pressed', active[f[0]] ? 'true' : 'false');
+      apply();
+    });
+    filterBox.appendChild(b);
+  });
+
+  qbox.addEventListener('input', apply);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement !== qbox) { e.preventDefault(); qbox.focus(); }
+    if (e.key === 'Escape' && document.activeElement === qbox) { qbox.value = ''; apply(); qbox.blur(); }
+  });
+  tree.addEventListener('click', function (e) {
+    var btn = e.target.closest('.note-btn');
+    if (!btn) return;
+    var note = btn.closest('.item').querySelector('.note');
+    var open = note.hasAttribute('hidden');
+    note.toggleAttribute('hidden', !open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+
+  Promise.all([
+    fetch('../data/roadmap.json').then(function (r) { return r.json(); }),
+    fetch('../data/notes.json').then(function (r) { return r.json(); }).catch(function () { return { notes: [] }; })
+  ]).then(function (both) {
+    var data = both[0];
+    both[1].notes.forEach(function (n) { notesByKey[n.topic + '#' + n.section] = n.path; });
+    render(data);
+    // stash the row data on each element for filtering
+    var flat = {};
+    data.tracks.forEach(function (t) {
+      var prefix = slug(t.name) + '-';
+      t.topics.forEach(function (tp) { tp.sections.forEach(function (s) {
+        (s.items || []).forEach(function (i) { flat[prefix + i.row] = i; });
+        (s.subsections || []).forEach(function (sub) { sub.items.forEach(function (i) { flat[prefix + i.row] = i; }); });
+      }); });
+    });
+    items.forEach(function (el) { el.__item = flat[el.dataset.key]; });
+    document.getElementById('src').textContent = 'From ' + data.source + ', exported ' + data.generated;
+    if (data.sheet_url) {
+      var a = document.getElementById('sheet');
+      a.href = data.sheet_url; a.hidden = false;
+    }
+    apply();
+    if (location.hash.indexOf('#row-') === 0) {
+      var t = document.querySelector(location.hash);
+      if (t) { t.closest('details').open = true; t.scrollIntoView({ block: 'center' }); }
+    }
+  }).catch(function (err) {
+    tree.innerHTML = '<p class="empty">Could not load the roadmap data: ' + esc(err.message) + '</p>';
+  });
+})();
+</script>
+</body>
+</html>
