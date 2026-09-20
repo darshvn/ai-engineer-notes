@@ -309,6 +309,13 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
   function saveLocal(map) {
     try { localStorage.setItem(STORE, JSON.stringify(map)); } catch (e) {}
   }
+  // The sheet's token is the site password, typed once and kept on this device,
+  // so it never appears in the repo.
+  function token() {
+    if (config && config.token) return config.token;
+    try { return localStorage.getItem('aen-gate-key') || ''; } catch (e) { return ''; }
+  }
+
   function say(text, warn) {
     if (!syncEl) return;
     syncEl.textContent = text;
@@ -351,7 +358,7 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
     fetch(config.webapp_url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // keeps the browser from sending a preflight
-      body: JSON.stringify({ token: config.token, updates: batch })
+      body: JSON.stringify({ token: token(), updates: batch })
     }).then(function (r) { return r.json(); }).then(function (res) {
       if (res.error) throw new Error(res.error);
       say('saved to the sheet · ' + new Date().toLocaleTimeString());
@@ -409,7 +416,7 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
 
     if (config.webapp_url) {
       say('reading the sheet…');
-      fetch(config.webapp_url + '?token=' + encodeURIComponent(config.token || ''))
+      fetch(config.webapp_url + '?token=' + encodeURIComponent(token()))
         .then(function (r) { return r.json(); })
         .then(function (res) {
           if (res.error) throw new Error(res.error);

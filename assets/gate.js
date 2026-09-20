@@ -12,8 +12,13 @@
   function unlocked() {
     try { return sessionStorage.getItem(KEY) === HASH; } catch (e) { return false; }
   }
-  function remember() {
-    try { sessionStorage.setItem(KEY, HASH); } catch (e) { /* private mode */ }
+  function remember(password) {
+    try {
+      sessionStorage.setItem(KEY, HASH);
+      // The roadmap page sends this to the sheet script as its token, so the
+      // token never has to be published with the site.
+      localStorage.setItem(KEY + '-key', password);
+    } catch (e) { /* private mode */ }
   }
   async function digest(text) {
     var bytes = new TextEncoder().encode(text);
@@ -56,7 +61,7 @@
     gate.querySelector('form').addEventListener('submit', async function (ev) {
       ev.preventDefault();
       if (await digest(input.value) === HASH) {
-        remember();
+        remember(input.value);
         gate.remove();
         document.documentElement.style.overflow = '';
       } else {

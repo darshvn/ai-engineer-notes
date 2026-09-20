@@ -1,5 +1,6 @@
 {
   "sheet_url": "https://docs.google.com/spreadsheets/d/1bSrH0n1m4t42yl7-aHD9iAY8NPxEiCqAY8l8pUNkH3g/edit",
-  "webapp_url": "",
-  "token": ""
+  "webapp_url": "https://script.google.com/macros/s/AKfycby_kiIuuXT2pcuhqr71JrcjJMl7EbmarOZ6tGngcK-x2TL0A_HgU17r7-GCbkSAzP1V/exec",
+  "token": "",
+  "note": "token is empty on purpose: the site uses the password you type at the gate, so it is never published here"
 }
