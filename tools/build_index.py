@@ -14,14 +14,8 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 START, END = "<!--CHROME:START-->", "<!--CHROME:END-->"
 
 TOGGLE_JS = """<script>
-(function(){var r=document.documentElement,b=document.getElementById('theme-toggle'),K='aen-theme';
-function sd(){return !!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)}
-function ap(t){t?r.setAttribute('data-theme',t):r.removeAttribute('data-theme');
-var d=t?t==='dark':sd();b.textContent=d?'Light':'Dark';
-b.setAttribute('aria-label','Switch to '+(d?'light':'dark')+' theme')}
-var s=null;try{s=localStorage.getItem(K)}catch(e){}ap(s);
-b.addEventListener('click',function(){var c=r.getAttribute('data-theme'),
-d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch(e){}});})();
+/* the site follows the system light/dark setting; drop any choice saved by the old toggle */
+try{localStorage.removeItem('aen-theme')}catch(e){}
 </script>"""
 
 
@@ -85,7 +79,6 @@ def chrome_for(note, by_topic, lookup):
   <span class="spacer"></span>
   {link(prev, '&larr;')}
   {link(nxt, '&rarr;')}
-  <button id="theme-toggle" type="button">Theme</button>
 </div></nav>
 {TOGGLE_JS}
 {END}"""
@@ -171,7 +164,6 @@ def build_index(structure, notes):
 <link rel="stylesheet" href="assets/hub.css?v={asset_version("assets/hub.css")}">
 </head>
 <body>
-<button id="theme-toggle" type="button">Theme</button>
 <div class="wrap">
 <header class="mast">
   <h1>AI Engineer Notes</h1>

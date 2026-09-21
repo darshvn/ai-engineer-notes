@@ -10,7 +10,7 @@ rebuilds the hub.
 Topic slugs and section numbers come from data/structure.json; run with --list to
 see what is available.
 """
-import argparse, datetime, json, os, re, subprocess, sys
+import argparse, datetime, html, json, os, re, subprocess, sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -44,7 +44,7 @@ def list_topics(structure):
 
 def title_of(src):
     m = re.search(r"<title>(.*?)</title>", src, re.S | re.I)
-    return m.group(1).strip() if m else None
+    return html.unescape(m.group(1).strip()) if m else None
 
 
 def main():

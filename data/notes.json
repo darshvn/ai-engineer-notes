@@ -6,7 +6,7 @@
       "title": "What a Language Model Actually Does",
       "path": "notes/llm-101/01-what-is-a-large-language-model",
       "track": "ai-engineer-track",
-      "added": "2026-09-09"
+      "added": "2026-09-21"
     },
     {
       "topic": "llm-101",
@@ -14,12 +14,12 @@
       "title": "How the Machine Is Built",
       "path": "notes/llm-101/02-transformer-architecture",
       "track": "ai-engineer-track",
-      "added": "2026-09-10"
+      "added": "2026-09-21"
     },
     {
       "topic": "python",
       "section": 7,
-      "title": "File Handling &amp; Serialization",
+      "title": "File Handling & Serialization",
       "path": "notes/python/07-file-handling-and-serialization",
       "track": "prerequisites",
       "added": "2026-09-21"

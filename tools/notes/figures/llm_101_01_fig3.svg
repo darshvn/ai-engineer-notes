@@ -1,0 +1,36 @@
+<svg viewBox="0 0 660 168" role="img" aria-label="A question goes to a small cheap representation model, which turns it into numbers used to find the closest few documents out of two million; those documents plus the question go to a large generative model, which writes the answer.">
+      <defs>
+        <marker id="c1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <rect x="16" y="44" width="84" height="36" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.75"/>
+      <text x="58" y="66" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor">question</text>
+
+      <line x1="100" y1="62" x2="128" y2="62" stroke="currentColor" stroke-width="1.3" opacity="0.7" marker-end="url(#c1)"/>
+
+      <rect x="132" y="44" width="126" height="36" fill="var(--accent-dim)" stroke="var(--accent)" stroke-width="1.5"/>
+      <text x="195" y="66" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--accent)">representation</text>
+      <text x="195" y="98" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--accent)">small · cheap · fast</text>
+
+      <line x1="258" y1="62" x2="286" y2="62" stroke="currentColor" stroke-width="1.3" opacity="0.7" marker-end="url(#c1)"/>
+      <text x="272" y="52" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10" fill="currentColor" opacity="0.6">numbers</text>
+
+      <rect x="290" y="44" width="118" height="36" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.75"/>
+      <text x="349" y="60" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="currentColor">find closest</text>
+      <text x="349" y="74" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10" fill="currentColor" opacity="0.6">of 2,000,000</text>
+
+      <line x1="408" y1="62" x2="436" y2="62" stroke="currentColor" stroke-width="1.3" opacity="0.7" marker-end="url(#c1)"/>
+      <text x="422" y="52" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10" fill="currentColor" opacity="0.6">docs</text>
+
+      <rect x="440" y="44" width="118" height="36" fill="var(--signal-dim)" stroke="var(--signal)" stroke-width="1.5"/>
+      <text x="499" y="66" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11" fill="var(--signal)">generative</text>
+      <text x="499" y="98" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--signal)">big · slow · costly</text>
+
+      <line x1="558" y1="62" x2="586" y2="62" stroke="currentColor" stroke-width="1.3" opacity="0.7" marker-end="url(#c1)"/>
+      <rect x="590" y="44" width="56" height="36" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.75"/>
+      <text x="618" y="66" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor">answer</text>
+
+      <text x="330" y="140" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="11.5" fill="currentColor" opacity="0.6">both models, one request — different jobs, different bills</text>
+    </svg>
