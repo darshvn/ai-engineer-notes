@@ -5,88 +5,76 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>What a Language Model Actually Does</title>
 <meta name="description" content="LLM 101 notes: language modelling, next-token prediction, reasoning, scaling and emergence, foundation models, and generative vs representation models.">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
 <style>
 :root {
-  --bg:#E9EBE7; --surface:#F6F7F4; --surface-2:#DFE3DE; --ink:#14181A; --muted:#59635F;
-  --rule:#C9CFC8; --accent:#146B5F; --accent-dim:#DCE8E4; --signal:#9A2C6B; --signal-dim:#F0DEE8;
-  --f-display:"Newsreader", Georgia, "Times New Roman", serif;
-  --f-body:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --f-mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --bg:#ffffff; --surface:#f5f5f3; --ink:#1d1d1f; --muted:#6e6e73; --rule:#e5e5e2;
+  --accent:#2457c5; --signal:#b8431f; --accent-dim:#e8eefb; --signal-dim:#fbeae3;
+  --f-body:-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --f-mono:ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) { :root {
-  --bg:#121614; --surface:#1A201D; --surface-2:#232A27; --ink:#E6EAE6; --muted:#929F99;
-  --rule:#2E3733; --accent:#56BCAC; --accent-dim:#1C2E2B; --signal:#E982B8; --signal-dim:#33202B; } }
+  --bg:#141414; --surface:#1e1e1e; --ink:#e8e8e6; --muted:#9a9a97; --rule:#2c2c2c;
+  --accent:#8ab4f8; --signal:#f28b6b; --accent-dim:#1c2538; --signal-dim:#3a231b; } }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16.5px; line-height: 1.62; -webkit-font-smoothing: antialiased; }
-.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
-.doc { max-width: 76ch; margin: 0 auto; }
-.doc h1 { font-family: var(--f-display); font-weight: 500; font-size: clamp(2.1rem, 5vw, 3rem); line-height: 1.1; margin: 48px 0 12px; }
-.doc .lead { font-size: 1.1rem; color: var(--muted); margin: 0 0 28px; }
-.doc .toc { border: 1px solid var(--rule); background: var(--surface); padding: 14px 20px; margin: 0 0 40px; }
-.doc .toc h2 { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
-.doc .toc ol { margin: 0; padding-left: 20px; } .doc .toc li { margin: 4px 0; }
-.doc a { color: var(--accent); }
-.doc .sect { border-top: 1px solid var(--rule); padding-top: 28px; margin-top: 44px; scroll-margin-top: 60px; }
-.doc h2 { font-family: var(--f-display); font-weight: 500; font-size: 1.9rem; margin: 0 0 14px; line-height: 1.2; }
-.doc h3 { font-size: 1.08rem; font-weight: 600; margin: 30px 0 10px; }
-.doc p { margin: 12px 0; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 17px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 20px 120px; }
+.doc h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; letter-spacing: -.02em; margin: 56px 0 8px; }
+.doc .lead { color: var(--muted); margin: 0 0 32px; }
+.doc .toc { margin: 0 0 48px; }
+.doc .toc h2 { font-size: .9rem; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
+.doc .toc ol { margin: 0; padding-left: 20px; color: var(--muted); } .doc .toc li { margin: 2px 0; }
+.doc .toc a { color: var(--ink); text-decoration: none; } .doc .toc a:hover { color: var(--accent); }
+.doc a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.doc .sect { margin-top: 64px; scroll-margin-top: 24px; }
+.doc h2 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; margin: 0 0 12px; }
+.doc h3 { font-size: 1.05rem; font-weight: 600; margin: 32px 0 8px; }
+.doc p { margin: 14px 0; }
 .doc ul, .doc ol { padding-left: 22px; } .doc li { margin: 6px 0; }
-.doc code { font-family: var(--f-mono); font-size: .88em; background: var(--surface-2); padding: 1px 5px; border-radius: 2px; }
-.doc pre { font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; overflow-x: auto; margin: 14px 0 6px; border: 1px solid var(--rule); white-space: pre; }
+.doc code { font-family: var(--f-mono); font-size: .86em; background: var(--surface); padding: 2px 5px; border-radius: 4px; }
+.doc pre { font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; overflow-x: auto; margin: 16px 0 6px; border-radius: 8px; white-space: pre; background: var(--surface); }
 .doc pre code { background: none; padding: 0; }
-.doc pre.code { background: var(--surface); }
-.doc pre.output { background: var(--bg); color: var(--muted); margin-top: 0; }
-.doc .out-label { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; }
-.doc .tbl-hold { overflow-x: auto; margin: 14px 0; }
+.doc pre.output { background: transparent; border: 1px solid var(--rule); color: var(--muted); margin-top: 0; }
+.doc .out-label { font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
+.doc .tbl-hold { overflow-x: auto; margin: 16px 0; }
 .doc table { border-collapse: collapse; width: 100%; font-size: 15px; }
-.doc th, .doc td { border: 1px solid var(--rule); padding: 7px 10px; text-align: left; vertical-align: top; }
-.doc th { background: var(--surface-2); font-weight: 600; }
-.doc .aside { border-left: 3px solid var(--rule); padding: 8px 14px; margin: 22px 0; color: var(--muted); font-size: 15px; }
-.doc .small { color: var(--muted); font-size: 14.5px; }
-.doc figure { margin: 24px 0; } .doc figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
-.doc figcaption { font-size: 14.5px; color: var(--muted); margin-top: 10px; }
-.doc details.answers { margin-top: 18px; } .doc details.answers summary { cursor: pointer; font-weight: 600; }
-.doc footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--rule); font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.doc th, .doc td { border-bottom: 1px solid var(--rule); padding: 8px 12px 8px 0; text-align: left; vertical-align: top; }
+.doc th { font-weight: 600; color: var(--muted); font-size: 14px; }
+.doc .aside { padding-left: 16px; border-left: 2px solid var(--rule); margin: 24px 0; color: var(--muted); }
+.doc .small { color: var(--muted); font-size: 15px; }
+.doc figure { margin: 28px 0; } .doc figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
+.doc figcaption { font-size: 15px; color: var(--muted); margin-top: 10px; }
+.doc details.answers { margin-top: 20px; } .doc details.answers summary { cursor: pointer; font-weight: 600; }
 /* practice runner */
-.runner { border: 1px solid var(--rule); background: var(--surface); margin: 14px 0 6px; }
-.runner .rcode { display: block; width: 100%; border: 0; border-bottom: 1px solid var(--rule); background: transparent; color: var(--ink);
+.runner { background: var(--surface); border-radius: 8px; margin: 16px 0 6px; overflow: hidden; }
+.runner .rcode { display: block; width: 100%; border: 0; background: transparent; color: var(--ink);
   font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; resize: none; overflow: hidden; tab-size: 4; white-space: pre; overflow-x: auto; }
-.runner .rcode:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
-.runner .rbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; }
-.runner button { font-family: var(--f-mono); font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 2px; cursor: pointer;
-  border: 1px solid var(--accent); background: var(--accent); color: var(--bg); }
-.runner .rreset { background: transparent; color: var(--muted); border-color: var(--rule); }
+.runner .rcode:focus { outline: none; }
+.runner .rbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 16px 12px; }
+.runner button { font: inherit; font-size: 14px; font-weight: 600; padding: 4px 14px; border-radius: 6px; cursor: pointer;
+  border: 0; background: var(--ink); color: var(--bg); }
+.runner .rreset { background: transparent; color: var(--muted); padding: 4px 2px; font-weight: 500; }
 .runner button:disabled { opacity: .5; cursor: wait; }
-.runner .rhint { font-size: 13px; color: var(--muted); }
-.runner .rout { margin: 0; border: 0; border-top: 1px solid var(--rule); background: var(--bg); color: var(--ink); }
+.runner .rhint { font-size: 13px; color: var(--muted); margin-left: auto; }
+.runner .rout { margin: 0; border-radius: 0; border-top: 1px solid var(--rule); background: transparent; color: var(--ink); }
 .runner .rout.err { color: var(--signal); }
 </style>
 </head>
 <body>
 <!--CHROME:START-->
 <style>
-  .note-chrome{position:sticky;top:0;z-index:40;background:var(--surface);
-    border-bottom:1px solid var(--rule);font-family:var(--f-mono);font-size:11.5px}
-  .note-chrome .inner{max-width:940px;margin:0 auto;padding:10px 24px;
-    display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
-  .note-chrome a{color:var(--accent);text-decoration:none}
-  .note-chrome a:hover{text-decoration:underline}
-  .crumb{color:var(--muted);letter-spacing:.06em}
-  .crumb b{color:var(--ink);font-weight:600}
+  .note-chrome{font-size:14px;color:var(--muted)}
+  .note-chrome .inner{max-width:720px;margin:0 auto;padding:20px 20px 0;
+    display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}
+  .note-chrome a{color:var(--muted);text-decoration:none}
+  .note-chrome a:hover{color:var(--ink)}
   .note-chrome .spacer{flex:1 1 auto}
-  .nav-adj{display:inline-flex;gap:7px;align-items:baseline;max-width:260px}
-  .nav-dir{color:var(--muted);white-space:nowrap}
+  .nav-adj{display:inline-flex;gap:6px;align-items:baseline;max-width:220px}
   .nav-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #theme-toggle{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;
-    text-transform:uppercase;font-weight:600;color:var(--muted);background:transparent;
-    border:1px solid var(--rule);border-radius:2px;padding:5px 9px;cursor:pointer;line-height:1}
-  #theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
   @media print{.note-chrome{display:none}}
 </style>
 <nav class="note-chrome"><div class="inner">
-  <a href="../../../">&larr; All notes</a>
-  <span class="crumb">LLM 101 / <b>&sect;1</b></span>
+  <a href="../../../">Notes</a>
+  <span class="crumb">LLM 101 &middot; &sect;1</span>
   <span class="spacer"></span>
   
   <a class="nav-adj" href="../../llm-101/02-transformer-architecture/"><span class="nav-dir">&rarr;</span><span class="nav-t">How the Machine Is Built</span></a>
@@ -99,7 +87,7 @@ try{localStorage.removeItem('aen-theme')}catch(e){}
 <div class="wrap"><div class="doc">
 <h1>What a Language Model Actually Does</h1>
 <p class="lead">LLM 101 · Section 1. What a language model outputs, how it is trained, why writing steps helps it reason, what scale changes, what a foundation model is, and the two kinds of model used in real systems.</p>
-<nav class="toc"><h2>Contents</h2><ol><li><a href="#s1">What “language modeling” means</a></li><li><a href="#s2">Next-token prediction</a></li><li><a href="#s3">Why next-token prediction leads to reasoning-like behavior</a></li><li><a href="#s4">Emergence and scaling laws</a></li><li><a href="#s5">Foundation models vs task-specific models</a></li><li><a href="#s6">Generative vs representation models</a></li><li><a href="#summary">Summary</a></li><li><a href="#review">Review questions</a></li></ol></nav>
+<nav class="toc"><h2>On this page</h2><ol><li><a href="#s1">What “language modeling” means</a></li><li><a href="#s2">Next-token prediction</a></li><li><a href="#s3">Why next-token prediction leads to reasoning-like behavior</a></li><li><a href="#s4">Emergence and scaling laws</a></li><li><a href="#s5">Foundation models vs task-specific models</a></li><li><a href="#s6">Generative vs representation models</a></li><li><a href="#summary">Summary</a></li><li><a href="#review">Review questions</a></li></ol></nav>
 
 <section class="sect" id="s1">
 <h2>1. What “language modeling” means</h2>
@@ -220,7 +208,7 @@ for p, i in zip(top.values, top.indices):
 <p class="small">This one needs torch, transformers, which can't run in a browser. Run it locally:</p><pre class="code">cd ~/Downloads/ai-engineer-notes/exercises
 source .venv/bin/activate
 python llm-101/01/01_next_token_table.py</pre>
-<div class="out-label">Output from a real run</div><pre class="output">The table has 50,257 rows and they add up to 1.0000
+<div class="out-label">Output</div><pre class="output">The table has 50,257 rows and they add up to 1.0000
 
   ' the'         0.085
   ' now'         0.048
@@ -305,7 +293,7 @@ for text in ["The cat sat on the mat.", "The cat sat on the thermodynamics."]:
 <p class="small">This one needs torch, transformers, which can't run in a browser. Run it locally:</p><pre class="code">cd ~/Downloads/ai-engineer-notes/exercises
 source .venv/bin/activate
 python llm-101/01/02_loss.py</pre>
-<div class="out-label">Output from a real run</div><pre class="output">The cat sat on the mat.
+<div class="out-label">Output</div><pre class="output">The cat sat on the mat.
    ' cat'             p = 0.0001   loss = 9.20
    ' sat'             p = 0.0007   loss = 7.26
    ' on'              p = 0.2240   loss = 1.50
@@ -418,7 +406,7 @@ for name, answer in answers.items():
 <p class="small">This one needs tiktoken, which can't run in a browser. Run it locally:</p><pre class="code">cd ~/Downloads/ai-engineer-notes/exercises
 source .venv/bin/activate
 python llm-101/01/03_passes.py</pre>
-<div class="out-label">Output from a real run</div><pre class="output">straight to it    1 tokens -&gt; 1 passes
+<div class="out-label">Output</div><pre class="output">straight to it    1 tokens -&gt; 1 passes
 step by step     32 tokens -&gt; 32 passes</pre>
 <p><strong>Try:</strong> write your own step-by-step working for 23 × 47 and count its passes. <span class="small">Result: <code>23 × 40 = 920. 23 × 7 = 161. 920 + 161 = 1081. The answer is 1081.</code> is 34 tokens, so 34 passes.</span></p>
 
@@ -465,8 +453,8 @@ print(f"{'size':&lt;6}{'each digit':&gt;11}{'whole answer':&gt;14}")
 for size, p in zip(sizes, per_digit):
     print(f"{size:&lt;6}{p:&gt;11.2f}{p ** digits:&gt;14.1%}")
 
-# Then try: set digits = 10. Where does the jump move?</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">size   each digit  whole answer
+# Then try: set digits = 10. Where does the jump move?</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">size   each digit  whole answer
 1B           0.30          0.2%
 3B           0.45          1.8%
 7B           0.60          7.8%
@@ -533,13 +521,13 @@ for t, r in zip(tests, results):
     print(f"  {t!r:32} -&gt; {r}")
 print(f"\n{len(tests)} predictions in {took * 1e6:.0f} microseconds")
 
-# Then try: add ("a masterpiece", "pos") to train and run it again.</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">  'great acting, wonderful'        -&gt; pos
+# Then try: add ("a masterpiece", "pos") to train and run it again.</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">  'great acting, wonderful'        -&gt; pos
   'boring and awful'               -&gt; neg
   'an absolute masterpiece'        -&gt; no idea
   'summarise this review for me'   -&gt; no idea
 
-4 predictions in 12 microseconds</pre>
+4 predictions in 11 microseconds</pre>
 <p><strong>Try:</strong> add <code>("a masterpiece", "pos")</code> to the training data. <span class="small">Result: "an absolute masterpiece" becomes <code>pos</code>, but "summarise this review" is still <code>no idea</code>: more labels fix gaps, not the fact that it does one job.</span></p>
 
 </section>
@@ -633,7 +621,7 @@ for sentence, v in zip(sentences, vectors):
 <p class="small">This one needs sentence_transformers, which can't run in a browser. Run it locally:</p><pre class="code">cd ~/Downloads/ai-engineer-notes/exercises
 source .venv/bin/activate
 python llm-101/01/06_embeddings.py</pre>
-<div class="out-label">Output from a real run</div><pre class="output">Each sentence becomes 384 numbers.
+<div class="out-label">Output</div><pre class="output">Each sentence becomes 384 numbers.
 First five for sentence one: [ 0.007 -0.063 -0.072 -0.032 -0.043] 
 
   1.000  How do I reset my password?
@@ -652,8 +640,6 @@ First five for sentence one: [ 0.007 -0.063 -0.072 -0.032 -0.043]
 <ol class="review"><li>A model writes a 50-word answer. How many probability tables does it produce?</li><li>Two models both predict the right token, one with probability 0.55 and one with 0.99. Which gets the higher loss?</li><li>Why can't a model "think harder" within a single token?</li><li>A benchmark shows 0% today. Should you expect it to stay near 0% for a model twice the size?</li><li>You must flag spam at 50,000 messages a second and have millions of labelled examples. Foundation model or task-specific?</li><li>Why not let the generative model search two million documents itself?</li></ol>
 <details class="answers"><summary>Answers</summary><ol class="review"><li>About 60, one per token (50 words is about 60 tokens).</li><li>The 0.55 one (loss 0.60 against 0.01). The loss rewards justified confidence, not just correctness.</li><li>Each token is one forward pass through a fixed number of layers, so the computation per token is fixed. More computation needs more tokens.</li><li>No. A pass-or-fail score can stay at zero while the model improves steadily underneath, then jump.</li><li>Task-specific: one narrow job, labels already available, and a volume where cost and latency dominate.</li><li>It would have to read all of them for every question: too slow, too expensive, and more than fits in its context. The embedding model narrows them to a few.</li></ol></details>
 </section>
-
-<footer><span>What a Language Model Actually Does</span><span>Every output on this page comes from running the code.</span></footer>
 </div></div>
 <script src="../../../assets/runner.js"></script>
 <script src="../../../assets/gate.js"></script>

@@ -5,88 +5,76 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>File Handling &amp; Serialization</title>
 <meta name="description" content="Python notes: text files, CSV and JSON, pickle, directories with os and pathlib, and logging to files.">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
 <style>
 :root {
-  --bg:#E9EBE7; --surface:#F6F7F4; --surface-2:#DFE3DE; --ink:#14181A; --muted:#59635F;
-  --rule:#C9CFC8; --accent:#146B5F; --accent-dim:#DCE8E4; --signal:#9A2C6B; --signal-dim:#F0DEE8;
-  --f-display:"Newsreader", Georgia, "Times New Roman", serif;
-  --f-body:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --f-mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --bg:#ffffff; --surface:#f5f5f3; --ink:#1d1d1f; --muted:#6e6e73; --rule:#e5e5e2;
+  --accent:#2457c5; --signal:#b8431f; --accent-dim:#e8eefb; --signal-dim:#fbeae3;
+  --f-body:-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --f-mono:ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) { :root {
-  --bg:#121614; --surface:#1A201D; --surface-2:#232A27; --ink:#E6EAE6; --muted:#929F99;
-  --rule:#2E3733; --accent:#56BCAC; --accent-dim:#1C2E2B; --signal:#E982B8; --signal-dim:#33202B; } }
+  --bg:#141414; --surface:#1e1e1e; --ink:#e8e8e6; --muted:#9a9a97; --rule:#2c2c2c;
+  --accent:#8ab4f8; --signal:#f28b6b; --accent-dim:#1c2538; --signal-dim:#3a231b; } }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16.5px; line-height: 1.62; -webkit-font-smoothing: antialiased; }
-.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
-.doc { max-width: 76ch; margin: 0 auto; }
-.doc h1 { font-family: var(--f-display); font-weight: 500; font-size: clamp(2.1rem, 5vw, 3rem); line-height: 1.1; margin: 48px 0 12px; }
-.doc .lead { font-size: 1.1rem; color: var(--muted); margin: 0 0 28px; }
-.doc .toc { border: 1px solid var(--rule); background: var(--surface); padding: 14px 20px; margin: 0 0 40px; }
-.doc .toc h2 { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
-.doc .toc ol { margin: 0; padding-left: 20px; } .doc .toc li { margin: 4px 0; }
-.doc a { color: var(--accent); }
-.doc .sect { border-top: 1px solid var(--rule); padding-top: 28px; margin-top: 44px; scroll-margin-top: 60px; }
-.doc h2 { font-family: var(--f-display); font-weight: 500; font-size: 1.9rem; margin: 0 0 14px; line-height: 1.2; }
-.doc h3 { font-size: 1.08rem; font-weight: 600; margin: 30px 0 10px; }
-.doc p { margin: 12px 0; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 17px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 20px 120px; }
+.doc h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; letter-spacing: -.02em; margin: 56px 0 8px; }
+.doc .lead { color: var(--muted); margin: 0 0 32px; }
+.doc .toc { margin: 0 0 48px; }
+.doc .toc h2 { font-size: .9rem; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
+.doc .toc ol { margin: 0; padding-left: 20px; color: var(--muted); } .doc .toc li { margin: 2px 0; }
+.doc .toc a { color: var(--ink); text-decoration: none; } .doc .toc a:hover { color: var(--accent); }
+.doc a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.doc .sect { margin-top: 64px; scroll-margin-top: 24px; }
+.doc h2 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; margin: 0 0 12px; }
+.doc h3 { font-size: 1.05rem; font-weight: 600; margin: 32px 0 8px; }
+.doc p { margin: 14px 0; }
 .doc ul, .doc ol { padding-left: 22px; } .doc li { margin: 6px 0; }
-.doc code { font-family: var(--f-mono); font-size: .88em; background: var(--surface-2); padding: 1px 5px; border-radius: 2px; }
-.doc pre { font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; overflow-x: auto; margin: 14px 0 6px; border: 1px solid var(--rule); white-space: pre; }
+.doc code { font-family: var(--f-mono); font-size: .86em; background: var(--surface); padding: 2px 5px; border-radius: 4px; }
+.doc pre { font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; overflow-x: auto; margin: 16px 0 6px; border-radius: 8px; white-space: pre; background: var(--surface); }
 .doc pre code { background: none; padding: 0; }
-.doc pre.code { background: var(--surface); }
-.doc pre.output { background: var(--bg); color: var(--muted); margin-top: 0; }
-.doc .out-label { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; }
-.doc .tbl-hold { overflow-x: auto; margin: 14px 0; }
+.doc pre.output { background: transparent; border: 1px solid var(--rule); color: var(--muted); margin-top: 0; }
+.doc .out-label { font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
+.doc .tbl-hold { overflow-x: auto; margin: 16px 0; }
 .doc table { border-collapse: collapse; width: 100%; font-size: 15px; }
-.doc th, .doc td { border: 1px solid var(--rule); padding: 7px 10px; text-align: left; vertical-align: top; }
-.doc th { background: var(--surface-2); font-weight: 600; }
-.doc .aside { border-left: 3px solid var(--rule); padding: 8px 14px; margin: 22px 0; color: var(--muted); font-size: 15px; }
-.doc .small { color: var(--muted); font-size: 14.5px; }
-.doc figure { margin: 24px 0; } .doc figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
-.doc figcaption { font-size: 14.5px; color: var(--muted); margin-top: 10px; }
-.doc details.answers { margin-top: 18px; } .doc details.answers summary { cursor: pointer; font-weight: 600; }
-.doc footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--rule); font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.doc th, .doc td { border-bottom: 1px solid var(--rule); padding: 8px 12px 8px 0; text-align: left; vertical-align: top; }
+.doc th { font-weight: 600; color: var(--muted); font-size: 14px; }
+.doc .aside { padding-left: 16px; border-left: 2px solid var(--rule); margin: 24px 0; color: var(--muted); }
+.doc .small { color: var(--muted); font-size: 15px; }
+.doc figure { margin: 28px 0; } .doc figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
+.doc figcaption { font-size: 15px; color: var(--muted); margin-top: 10px; }
+.doc details.answers { margin-top: 20px; } .doc details.answers summary { cursor: pointer; font-weight: 600; }
 /* practice runner */
-.runner { border: 1px solid var(--rule); background: var(--surface); margin: 14px 0 6px; }
-.runner .rcode { display: block; width: 100%; border: 0; border-bottom: 1px solid var(--rule); background: transparent; color: var(--ink);
+.runner { background: var(--surface); border-radius: 8px; margin: 16px 0 6px; overflow: hidden; }
+.runner .rcode { display: block; width: 100%; border: 0; background: transparent; color: var(--ink);
   font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; resize: none; overflow: hidden; tab-size: 4; white-space: pre; overflow-x: auto; }
-.runner .rcode:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
-.runner .rbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; }
-.runner button { font-family: var(--f-mono); font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 2px; cursor: pointer;
-  border: 1px solid var(--accent); background: var(--accent); color: var(--bg); }
-.runner .rreset { background: transparent; color: var(--muted); border-color: var(--rule); }
+.runner .rcode:focus { outline: none; }
+.runner .rbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 16px 12px; }
+.runner button { font: inherit; font-size: 14px; font-weight: 600; padding: 4px 14px; border-radius: 6px; cursor: pointer;
+  border: 0; background: var(--ink); color: var(--bg); }
+.runner .rreset { background: transparent; color: var(--muted); padding: 4px 2px; font-weight: 500; }
 .runner button:disabled { opacity: .5; cursor: wait; }
-.runner .rhint { font-size: 13px; color: var(--muted); }
-.runner .rout { margin: 0; border: 0; border-top: 1px solid var(--rule); background: var(--bg); color: var(--ink); }
+.runner .rhint { font-size: 13px; color: var(--muted); margin-left: auto; }
+.runner .rout { margin: 0; border-radius: 0; border-top: 1px solid var(--rule); background: transparent; color: var(--ink); }
 .runner .rout.err { color: var(--signal); }
 </style>
 </head>
 <body>
 <!--CHROME:START-->
 <style>
-  .note-chrome{position:sticky;top:0;z-index:40;background:var(--surface);
-    border-bottom:1px solid var(--rule);font-family:var(--f-mono);font-size:11.5px}
-  .note-chrome .inner{max-width:940px;margin:0 auto;padding:10px 24px;
-    display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
-  .note-chrome a{color:var(--accent);text-decoration:none}
-  .note-chrome a:hover{text-decoration:underline}
-  .crumb{color:var(--muted);letter-spacing:.06em}
-  .crumb b{color:var(--ink);font-weight:600}
+  .note-chrome{font-size:14px;color:var(--muted)}
+  .note-chrome .inner{max-width:720px;margin:0 auto;padding:20px 20px 0;
+    display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}
+  .note-chrome a{color:var(--muted);text-decoration:none}
+  .note-chrome a:hover{color:var(--ink)}
   .note-chrome .spacer{flex:1 1 auto}
-  .nav-adj{display:inline-flex;gap:7px;align-items:baseline;max-width:260px}
-  .nav-dir{color:var(--muted);white-space:nowrap}
+  .nav-adj{display:inline-flex;gap:6px;align-items:baseline;max-width:220px}
   .nav-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #theme-toggle{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;
-    text-transform:uppercase;font-weight:600;color:var(--muted);background:transparent;
-    border:1px solid var(--rule);border-radius:2px;padding:5px 9px;cursor:pointer;line-height:1}
-  #theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
   @media print{.note-chrome{display:none}}
 </style>
 <nav class="note-chrome"><div class="inner">
-  <a href="../../../">&larr; All notes</a>
-  <span class="crumb">Python / <b>&sect;7</b></span>
+  <a href="../../../">Notes</a>
+  <span class="crumb">Python &middot; &sect;7</span>
   <span class="spacer"></span>
   
   
@@ -99,7 +87,7 @@ try{localStorage.removeItem('aen-theme')}catch(e){}
 <div class="wrap"><div class="doc">
 <h1>File Handling &amp; Serialization</h1>
 <p class="lead">Python · Section 7. Reading and writing files, CSV and JSON, pickle, working with directories, and logging to files.</p>
-<nav class="toc"><h2>Contents</h2><ol><li><a href="#s1">Reading and writing text files</a></li><li><a href="#s2">CSV and JSON</a></li><li><a href="#s3">Pickle</a></li><li><a href="#s4">Working with directories (os, pathlib)</a></li><li><a href="#s5">Logging to files</a></li><li><a href="#summary">Summary</a></li><li><a href="#review">Review questions</a></li></ol></nav>
+<nav class="toc"><h2>On this page</h2><ol><li><a href="#s1">Reading and writing text files</a></li><li><a href="#s2">CSV and JSON</a></li><li><a href="#s3">Pickle</a></li><li><a href="#s4">Working with directories (os, pathlib)</a></li><li><a href="#s5">Logging to files</a></li><li><a href="#summary">Summary</a></li><li><a href="#review">Review questions</a></li></ol></nav>
 
 <section class="sect" id="s1">
 <h2>1. Reading and writing text files</h2>
@@ -192,8 +180,8 @@ with open(notes, encoding="utf-8") as f:           # "r" is the default
         print(n, repr(line))
     print("read() at the end gives", repr(f.read()))
 
-# Then try: change "a" to "w" on the second open and run it again.</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">1 'tokens\n'
+# Then try: change "a" to "w" on the second open and run it again.</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">1 'tokens\n'
 2 'embeddings\n'
 3 'attention\n'
 read() at the end gives ''</pre>
@@ -307,8 +295,8 @@ from_json = json.load(open(out / "scores.json", encoding="utf-8"))
 print("CSV :", repr(from_csv[0]["score"]), repr(from_csv[0]["tags"]))
 print("JSON:", repr(from_json[0]["score"]), repr(from_json[0]["tags"]))
 
-# Then try: add "joined": {2024, 2025} (a set) to Asha's record.</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">CSV : '92' "('python', 'sql')"
+# Then try: add "joined": {2024, 2025} (a set) to Asha's record.</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">CSV : '92' "('python', 'sql')"
 JSON: 92 ['python', 'sql']</pre>
 <p><strong>Try:</strong> make Asha's <code>tags</code> a set, <code>{"python", "sql"}</code>. <span class="small">Result: <code>TypeError: Object of type set is not JSON serializable</code>.</span></p>
 
@@ -392,8 +380,8 @@ class Surprise:                      # a harmless stand-in for a malicious file
 
 pickle.loads(pickle.dumps(Surprise()))
 
-# Then try: json.dumps(data) and read the error.</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">Student ['python', 'sql'] (92, 78)
+# Then try: json.dumps(data) and read the error.</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">Student ['python', 'sql'] (92, 78)
 first bytes: b'\x80\x04\x95g\x00\x00\x00\x00\x00\x00\x00}'
 this line ran inside pickle.loads()</pre>
 <p><strong>Try:</strong> add <code>import json</code> and <code>json.dumps(data)</code> at the end. <span class="small">Result: <code>TypeError: Object of type Student is not JSON serializable</code>.</span></p>
@@ -438,7 +426,7 @@ print(sorted(p.name for p in data.glob("**/*.csv")))  # CSVs here and below</pre
 <pre class="output">['a.csv', 'b.csv', 'notes.txt', 'raw']
 ['a.csv', 'b.csv']
 ['a.csv', 'b.csv', 'c.csv']</pre>
-<p><code>iterdir()</code> and <code>glob()</code> return files in whatever order the operating system gives, so wrap them in <code>sorted()</code> when order matters.</p>
+<p><code>iterdir()</code> and <code>glob()</code> return files in whatever order the operating system gives, so wrap them in <code>sorted()</code> when order matters. The practice script below shows it: on a Mac, <code>glob("*.csv")</code> returned <code>['a.csv', 'b.csv']</code>, while the same code run in this page's browser runner returned <code>['b.csv', 'a.csv']</code>.</p>
 
 <h3>Common operations: pathlib vs os</h3>
 <div class="tbl-hold"><table><thead><tr><th>Task</th><th>pathlib</th><th>os / shutil</th></tr></thead><tbody><tr><td>Join paths</td><td><code>Path("data") / "a.csv"</code></td><td><code>os.path.join("data", "a.csv")</code></td></tr><tr><td>Current directory</td><td><code>Path.cwd()</code></td><td><code>os.getcwd()</code></td></tr><tr><td>Exists?</td><td><code>p.exists()</code>, <code>p.is_file()</code>, <code>p.is_dir()</code></td><td><code>os.path.exists(p)</code></td></tr><tr><td>Create folders</td><td><code>p.mkdir(parents=True, exist_ok=True)</code></td><td><code>os.makedirs(p, exist_ok=True)</code></td></tr><tr><td>List a folder</td><td><code>p.iterdir()</code>, <code>p.glob("*.csv")</code></td><td><code>os.listdir(p)</code></td></tr><tr><td>Rename / move</td><td><code>p.rename(new)</code></td><td><code>os.rename(p, new)</code></td></tr><tr><td>Delete a file</td><td><code>p.unlink()</code></td><td><code>os.remove(p)</code></td></tr><tr><td>Delete an empty folder</td><td><code>p.rmdir()</code></td><td><code>os.rmdir(p)</code></td></tr><tr><td>Delete a folder and its contents</td><td>—</td><td><code>shutil.rmtree(p)</code> (no undo)</td></tr><tr><td>Name parts</td><td><code>p.name</code>, <code>p.stem</code>, <code>p.suffix</code>, <code>p.parent</code></td><td><code>os.path.basename</code>, <code>splitext</code>, <code>dirname</code></td></tr></tbody></table></div>
@@ -474,8 +462,8 @@ print("parts    :", (data / "a.csv").stem, (data / "a.csv").suffix, (data / "a.c
 print("after    :", sorted(p.name for p in data.iterdir()))
 print("relative :", Path("data").resolve() == data.resolve())
 
-# Then try: change glob("*.csv") to glob("**/*.csv").</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">glob     : ['a.csv', 'b.csv']
+# Then try: change glob("*.csv") to glob("**/*.csv").</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">glob     : ['a.csv', 'b.csv']
 sorted   : ['a.csv', 'b.csv']
 parts    : a .csv data
 after    : ['a.csv', 'b.csv', 'notes.md', 'raw']
@@ -514,9 +502,9 @@ except ZeroDivisionError:
 
 print(open("app.log", encoding="utf-8").read())</pre>
 <div class="out-label">Output</div>
-<pre class="output">2026-09-21 19:44:18,053 INFO     etl: loaded 250 rows
-2026-09-21 19:44:18,053 WARNING  etl: 3 rows had no score
-2026-09-21 19:44:18,053 ERROR    etl: average failed
+<pre class="output">2026-09-21 19:58:58,335 INFO     etl: loaded 250 rows
+2026-09-21 19:58:58,335 WARNING  etl: 3 rows had no score
+2026-09-21 19:58:58,335 ERROR    etl: average failed
 Traceback (most recent call last):
   File "&lt;string&gt;", line 15, in &lt;module&gt;
 ZeroDivisionError: division by zero</pre>
@@ -567,8 +555,8 @@ except ZeroDivisionError:
 
 print(log_file.read_text(encoding="utf-8"))
 
-# Then try: change level=logging.INFO to level=logging.DEBUG.</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">INFO     etl: loaded 250 rows
+# Then try: change level=logging.INFO to level=logging.DEBUG.</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">INFO     etl: loaded 250 rows
 WARNING  etl: 3 rows had no score
 ERROR    etl: average failed
 Traceback (most recent call last):
@@ -589,8 +577,6 @@ ZeroDivisionError: division by zero</pre>
 <ol class="review"><li>What happens to an existing file when it's opened with <code>"w"</code>, and when exactly does it happen?</li><li>Why can data be lost if a file isn't closed?</li><li>A value read from a CSV file is <code>"92"</code>. What is <code>row["score"] * 2</code>?</li><li>What do a tuple, a set and a dict with integer keys become after a JSON round trip?</li><li>Give two reasons not to use pickle for data you'll share with others.</li><li>A script opens <code>"data/scores.csv"</code>. It works from the project folder but not from its parent. Why, and how do you fix it?</li><li>Your <code>log.info()</code> messages appear nowhere. Name two possible causes.</li></ol>
 <details class="answers"><summary>Answers</summary><ol class="review"><li>It's emptied immediately when <code>open()</code> runs, before any write.</li><li>Writes are held in a buffer and only reach the disk when the buffer fills or the file is closed.</li><li><code>"9292"</code>. The value is a string; convert it with <code>int()</code> first.</li><li>A list; a <code>TypeError</code> (sets aren't supported); a dict with string keys.</li><li>Only Python can read it, and loading it can execute code. (Also: it needs the original class, and it isn't human-readable.)</li><li>Relative paths are resolved from the working directory. Build the path from <code>Path(__file__).parent</code>.</li><li>The level is still the default WARNING, or <code>basicConfig</code> was already called earlier (use <code>force=True</code>).</li></ol></details>
 </section>
-
-<footer><span>File Handling &amp; Serialization</span><span>Every output on this page comes from running the code.</span></footer>
 </div></div>
 <script src="../../../assets/runner.js"></script>
 <script src="../../../assets/gate.js"></script>

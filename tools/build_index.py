@@ -55,27 +55,19 @@ def chrome_for(note, by_topic, lookup):
 
     return f"""{START}
 <style>
-  .note-chrome{{position:sticky;top:0;z-index:40;background:var(--surface);
-    border-bottom:1px solid var(--rule);font-family:var(--f-mono);font-size:11.5px}}
-  .note-chrome .inner{{max-width:940px;margin:0 auto;padding:10px 24px;
-    display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}}
-  .note-chrome a{{color:var(--accent);text-decoration:none}}
-  .note-chrome a:hover{{text-decoration:underline}}
-  .crumb{{color:var(--muted);letter-spacing:.06em}}
-  .crumb b{{color:var(--ink);font-weight:600}}
+  .note-chrome{{font-size:14px;color:var(--muted)}}
+  .note-chrome .inner{{max-width:720px;margin:0 auto;padding:20px 20px 0;
+    display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}}
+  .note-chrome a{{color:var(--muted);text-decoration:none}}
+  .note-chrome a:hover{{color:var(--ink)}}
   .note-chrome .spacer{{flex:1 1 auto}}
-  .nav-adj{{display:inline-flex;gap:7px;align-items:baseline;max-width:260px}}
-  .nav-dir{{color:var(--muted);white-space:nowrap}}
+  .nav-adj{{display:inline-flex;gap:6px;align-items:baseline;max-width:220px}}
   .nav-t{{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
-  #theme-toggle{{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;
-    text-transform:uppercase;font-weight:600;color:var(--muted);background:transparent;
-    border:1px solid var(--rule);border-radius:2px;padding:5px 9px;cursor:pointer;line-height:1}}
-  #theme-toggle:hover{{color:var(--accent);border-color:var(--accent)}}
   @media print{{.note-chrome{{display:none}}}}
 </style>
 <nav class="note-chrome"><div class="inner">
-  <a href="../../../">&larr; All notes</a>
-  <span class="crumb">{e(t['name'])} / <b>&sect;{s['n']}</b></span>
+  <a href="../../../">Notes</a>
+  <span class="crumb">{e(t['name'])} &middot; &sect;{s['n']}</span>
   <span class="spacer"></span>
   {link(prev, '&larr;')}
   {link(nxt, '&rarr;')}
@@ -144,7 +136,6 @@ def build_index(structure, notes):
                     f'<span class="sec-n">&sect;{s["n"]}</span>'
                     f'<span class="sec-name">'
                     f'<a href="{e(n["path"])}/">{e(n["title"])}</a>'
-                    f'<span class="sec-sub">{e(s["name"])}</span>'
                     f'</span></li>')
             parts.append(f'<div class="topic"><h3>{e(t["name"])}</h3>\n'
                          f'<ul class="sections">\n' + "\n".join(rows) + '\n</ul></div>')
@@ -159,19 +150,16 @@ def build_index(structure, notes):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AI Engineer Notes</title>
-<meta name="description" content="Notes on language models, Python and the systems around them — each idea in prose and as a diagram, closing with a retrieval bank.">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
+<meta name="description" content="Study notes on Python and language models, with runnable exercises.">
 <link rel="stylesheet" href="assets/hub.css?v={asset_version("assets/hub.css")}">
 </head>
 <body>
 <div class="wrap">
 <header class="mast">
   <h1>AI Engineer Notes</h1>
-  <p class="standfirst">Every idea written out in prose, drawn as the mechanism it actually is, and closed with a retrieval bank rather than a summary to re-read.</p>
-  <p class="standfirst"><a href="roadmap/">Open the roadmap</a> &mdash; every item with its resource, second source and note.</p>
+  <nav><a href="roadmap/">Roadmap</a></nav>
 </header>
 {chr(10).join(parts)}
-<footer><span>AI Engineer Notes</span></footer>
 </div>
 {TOGGLE_JS}
 <script src="assets/gate.js"></script>\n</body>

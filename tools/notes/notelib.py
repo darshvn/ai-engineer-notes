@@ -103,7 +103,7 @@ def practice(rel, what, change=None, result=None):
             f'<textarea class="rcode" spellcheck="false" aria-label="Code for {rel}">{e(src)}</textarea>'
             '<div class="rbar"><button class="rrun" type="button">Run</button>'
             '<button class="rreset" type="button">Reset</button>'
-            '<span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div>'
+            '<span class="rhint">Editable · ⌘/Ctrl + Enter</span></div>'
             '<pre class="rout" hidden></pre></div>')
     else:
         missing = ', '.join(sorted(imports & NOT_IN_BROWSER))
@@ -111,7 +111,7 @@ def practice(rel, what, change=None, result=None):
         parts.append(f'<p class="small">This one needs {missing}, which can\'t run in a browser. Run it locally:</p>'
                      f'<pre class="code">cd ~/Downloads/ai-engineer-notes/exercises\n'
                      f'source .venv/bin/activate\npython {rel}</pre>')
-    parts.append(f'<div class="out-label">Output from a real run</div><pre class="output">{e(recorded)}</pre>')
+    parts.append(f'<div class="out-label">Output</div><pre class="output">{e(recorded)}</pre>')
     if change:
         parts.append(f'<p><strong>Try:</strong> {change}' + (f' <span class="small">Result: {result}</span>' if result else '') + '</p>')
     return '\n'.join(parts)
@@ -126,61 +126,57 @@ HEAD = '''<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title>
 <meta name="description" content="{description}">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
 <style>
 :root {
-  --bg:#E9EBE7; --surface:#F6F7F4; --surface-2:#DFE3DE; --ink:#14181A; --muted:#59635F;
-  --rule:#C9CFC8; --accent:#146B5F; --accent-dim:#DCE8E4; --signal:#9A2C6B; --signal-dim:#F0DEE8;
-  --f-display:"Newsreader", Georgia, "Times New Roman", serif;
-  --f-body:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --f-mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --bg:#ffffff; --surface:#f5f5f3; --ink:#1d1d1f; --muted:#6e6e73; --rule:#e5e5e2;
+  --accent:#2457c5; --signal:#b8431f; --accent-dim:#e8eefb; --signal-dim:#fbeae3;
+  --f-body:-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --f-mono:ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) { :root {
-  --bg:#121614; --surface:#1A201D; --surface-2:#232A27; --ink:#E6EAE6; --muted:#929F99;
-  --rule:#2E3733; --accent:#56BCAC; --accent-dim:#1C2E2B; --signal:#E982B8; --signal-dim:#33202B; } }
+  --bg:#141414; --surface:#1e1e1e; --ink:#e8e8e6; --muted:#9a9a97; --rule:#2c2c2c;
+  --accent:#8ab4f8; --signal:#f28b6b; --accent-dim:#1c2538; --signal-dim:#3a231b; } }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16.5px; line-height: 1.62; -webkit-font-smoothing: antialiased; }
-.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
-.doc { max-width: 76ch; margin: 0 auto; }
-.doc h1 { font-family: var(--f-display); font-weight: 500; font-size: clamp(2.1rem, 5vw, 3rem); line-height: 1.1; margin: 48px 0 12px; }
-.doc .lead { font-size: 1.1rem; color: var(--muted); margin: 0 0 28px; }
-.doc .toc { border: 1px solid var(--rule); background: var(--surface); padding: 14px 20px; margin: 0 0 40px; }
-.doc .toc h2 { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
-.doc .toc ol { margin: 0; padding-left: 20px; } .doc .toc li { margin: 4px 0; }
-.doc a { color: var(--accent); }
-.doc .sect { border-top: 1px solid var(--rule); padding-top: 28px; margin-top: 44px; scroll-margin-top: 60px; }
-.doc h2 { font-family: var(--f-display); font-weight: 500; font-size: 1.9rem; margin: 0 0 14px; line-height: 1.2; }
-.doc h3 { font-size: 1.08rem; font-weight: 600; margin: 30px 0 10px; }
-.doc p { margin: 12px 0; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 17px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 20px 120px; }
+.doc h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; letter-spacing: -.02em; margin: 56px 0 8px; }
+.doc .lead { color: var(--muted); margin: 0 0 32px; }
+.doc .toc { margin: 0 0 48px; }
+.doc .toc h2 { font-size: .9rem; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
+.doc .toc ol { margin: 0; padding-left: 20px; color: var(--muted); } .doc .toc li { margin: 2px 0; }
+.doc .toc a { color: var(--ink); text-decoration: none; } .doc .toc a:hover { color: var(--accent); }
+.doc a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.doc .sect { margin-top: 64px; scroll-margin-top: 24px; }
+.doc h2 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; margin: 0 0 12px; }
+.doc h3 { font-size: 1.05rem; font-weight: 600; margin: 32px 0 8px; }
+.doc p { margin: 14px 0; }
 .doc ul, .doc ol { padding-left: 22px; } .doc li { margin: 6px 0; }
-.doc code { font-family: var(--f-mono); font-size: .88em; background: var(--surface-2); padding: 1px 5px; border-radius: 2px; }
-.doc pre { font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; overflow-x: auto; margin: 14px 0 6px; border: 1px solid var(--rule); white-space: pre; }
+.doc code { font-family: var(--f-mono); font-size: .86em; background: var(--surface); padding: 2px 5px; border-radius: 4px; }
+.doc pre { font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; overflow-x: auto; margin: 16px 0 6px; border-radius: 8px; white-space: pre; background: var(--surface); }
 .doc pre code { background: none; padding: 0; }
-.doc pre.code { background: var(--surface); }
-.doc pre.output { background: var(--bg); color: var(--muted); margin-top: 0; }
-.doc .out-label { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; }
-.doc .tbl-hold { overflow-x: auto; margin: 14px 0; }
+.doc pre.output { background: transparent; border: 1px solid var(--rule); color: var(--muted); margin-top: 0; }
+.doc .out-label { font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
+.doc .tbl-hold { overflow-x: auto; margin: 16px 0; }
 .doc table { border-collapse: collapse; width: 100%; font-size: 15px; }
-.doc th, .doc td { border: 1px solid var(--rule); padding: 7px 10px; text-align: left; vertical-align: top; }
-.doc th { background: var(--surface-2); font-weight: 600; }
-.doc .aside { border-left: 3px solid var(--rule); padding: 8px 14px; margin: 22px 0; color: var(--muted); font-size: 15px; }
-.doc .small { color: var(--muted); font-size: 14.5px; }
-.doc figure { margin: 24px 0; } .doc figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
-.doc figcaption { font-size: 14.5px; color: var(--muted); margin-top: 10px; }
-.doc details.answers { margin-top: 18px; } .doc details.answers summary { cursor: pointer; font-weight: 600; }
-.doc footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--rule); font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.doc th, .doc td { border-bottom: 1px solid var(--rule); padding: 8px 12px 8px 0; text-align: left; vertical-align: top; }
+.doc th { font-weight: 600; color: var(--muted); font-size: 14px; }
+.doc .aside { padding-left: 16px; border-left: 2px solid var(--rule); margin: 24px 0; color: var(--muted); }
+.doc .small { color: var(--muted); font-size: 15px; }
+.doc figure { margin: 28px 0; } .doc figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
+.doc figcaption { font-size: 15px; color: var(--muted); margin-top: 10px; }
+.doc details.answers { margin-top: 20px; } .doc details.answers summary { cursor: pointer; font-weight: 600; }
 /* practice runner */
-.runner { border: 1px solid var(--rule); background: var(--surface); margin: 14px 0 6px; }
-.runner .rcode { display: block; width: 100%; border: 0; border-bottom: 1px solid var(--rule); background: transparent; color: var(--ink);
+.runner { background: var(--surface); border-radius: 8px; margin: 16px 0 6px; overflow: hidden; }
+.runner .rcode { display: block; width: 100%; border: 0; background: transparent; color: var(--ink);
   font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; resize: none; overflow: hidden; tab-size: 4; white-space: pre; overflow-x: auto; }
-.runner .rcode:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
-.runner .rbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; }
-.runner button { font-family: var(--f-mono); font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 2px; cursor: pointer;
-  border: 1px solid var(--accent); background: var(--accent); color: var(--bg); }
-.runner .rreset { background: transparent; color: var(--muted); border-color: var(--rule); }
+.runner .rcode:focus { outline: none; }
+.runner .rbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 16px 12px; }
+.runner button { font: inherit; font-size: 14px; font-weight: 600; padding: 4px 14px; border-radius: 6px; cursor: pointer;
+  border: 0; background: var(--ink); color: var(--bg); }
+.runner .rreset { background: transparent; color: var(--muted); padding: 4px 2px; font-weight: 500; }
 .runner button:disabled { opacity: .5; cursor: wait; }
-.runner .rhint { font-size: 13px; color: var(--muted); }
-.runner .rout { margin: 0; border: 0; border-top: 1px solid var(--rule); background: var(--bg); color: var(--ink); }
+.runner .rhint { font-size: 13px; color: var(--muted); margin-left: auto; }
+.runner .rout { margin: 0; border-radius: 0; border-top: 1px solid var(--rule); background: transparent; color: var(--ink); }
 .runner .rout.err { color: var(--signal); }
 </style>
 </head>
@@ -198,9 +194,8 @@ def page(title, description, lead, sections, extra=''):
                    for sid, h, content in sections)
     return (HEAD.replace('{title}', e(title)).replace('{description}', e(description))
             + f'<h1>{e(title)}</h1>\n<p class="lead">{lead}</p>\n'
-            + f'<nav class="toc"><h2>Contents</h2><ol>{toc_items}</ol></nav>\n'
+            + f'<nav class="toc"><h2>On this page</h2><ol>{toc_items}</ol></nav>\n'
             + body + extra
-            + '\n<footer><span>' + e(title) + '</span><span>Every output on this page comes from running the code.</span></footer>\n'
             + '</div></div>\n<script src="../../../assets/runner.js"></script>\n'
             + '<script src="../../../assets/gate.js"></script>\n</body>\n</html>\n')
 

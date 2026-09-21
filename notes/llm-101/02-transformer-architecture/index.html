@@ -5,88 +5,76 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>How the Machine Is Built</title>
 <meta name="description" content="LLM 101 notes on the transformer: why RNNs failed, attention, self-attention, multi-head attention, encoder and decoder models, positional encoding, context windows and the KV cache.">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
 <style>
 :root {
-  --bg:#E9EBE7; --surface:#F6F7F4; --surface-2:#DFE3DE; --ink:#14181A; --muted:#59635F;
-  --rule:#C9CFC8; --accent:#146B5F; --accent-dim:#DCE8E4; --signal:#9A2C6B; --signal-dim:#F0DEE8;
-  --f-display:"Newsreader", Georgia, "Times New Roman", serif;
-  --f-body:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --f-mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --bg:#ffffff; --surface:#f5f5f3; --ink:#1d1d1f; --muted:#6e6e73; --rule:#e5e5e2;
+  --accent:#2457c5; --signal:#b8431f; --accent-dim:#e8eefb; --signal-dim:#fbeae3;
+  --f-body:-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --f-mono:ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) { :root {
-  --bg:#121614; --surface:#1A201D; --surface-2:#232A27; --ink:#E6EAE6; --muted:#929F99;
-  --rule:#2E3733; --accent:#56BCAC; --accent-dim:#1C2E2B; --signal:#E982B8; --signal-dim:#33202B; } }
+  --bg:#141414; --surface:#1e1e1e; --ink:#e8e8e6; --muted:#9a9a97; --rule:#2c2c2c;
+  --accent:#8ab4f8; --signal:#f28b6b; --accent-dim:#1c2538; --signal-dim:#3a231b; } }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16.5px; line-height: 1.62; -webkit-font-smoothing: antialiased; }
-.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
-.doc { max-width: 76ch; margin: 0 auto; }
-.doc h1 { font-family: var(--f-display); font-weight: 500; font-size: clamp(2.1rem, 5vw, 3rem); line-height: 1.1; margin: 48px 0 12px; }
-.doc .lead { font-size: 1.1rem; color: var(--muted); margin: 0 0 28px; }
-.doc .toc { border: 1px solid var(--rule); background: var(--surface); padding: 14px 20px; margin: 0 0 40px; }
-.doc .toc h2 { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
-.doc .toc ol { margin: 0; padding-left: 20px; } .doc .toc li { margin: 4px 0; }
-.doc a { color: var(--accent); }
-.doc .sect { border-top: 1px solid var(--rule); padding-top: 28px; margin-top: 44px; scroll-margin-top: 60px; }
-.doc h2 { font-family: var(--f-display); font-weight: 500; font-size: 1.9rem; margin: 0 0 14px; line-height: 1.2; }
-.doc h3 { font-size: 1.08rem; font-weight: 600; margin: 30px 0 10px; }
-.doc p { margin: 12px 0; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 17px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 20px 120px; }
+.doc h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; letter-spacing: -.02em; margin: 56px 0 8px; }
+.doc .lead { color: var(--muted); margin: 0 0 32px; }
+.doc .toc { margin: 0 0 48px; }
+.doc .toc h2 { font-size: .9rem; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
+.doc .toc ol { margin: 0; padding-left: 20px; color: var(--muted); } .doc .toc li { margin: 2px 0; }
+.doc .toc a { color: var(--ink); text-decoration: none; } .doc .toc a:hover { color: var(--accent); }
+.doc a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.doc .sect { margin-top: 64px; scroll-margin-top: 24px; }
+.doc h2 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; margin: 0 0 12px; }
+.doc h3 { font-size: 1.05rem; font-weight: 600; margin: 32px 0 8px; }
+.doc p { margin: 14px 0; }
 .doc ul, .doc ol { padding-left: 22px; } .doc li { margin: 6px 0; }
-.doc code { font-family: var(--f-mono); font-size: .88em; background: var(--surface-2); padding: 1px 5px; border-radius: 2px; }
-.doc pre { font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; overflow-x: auto; margin: 14px 0 6px; border: 1px solid var(--rule); white-space: pre; }
+.doc code { font-family: var(--f-mono); font-size: .86em; background: var(--surface); padding: 2px 5px; border-radius: 4px; }
+.doc pre { font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; overflow-x: auto; margin: 16px 0 6px; border-radius: 8px; white-space: pre; background: var(--surface); }
 .doc pre code { background: none; padding: 0; }
-.doc pre.code { background: var(--surface); }
-.doc pre.output { background: var(--bg); color: var(--muted); margin-top: 0; }
-.doc .out-label { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; }
-.doc .tbl-hold { overflow-x: auto; margin: 14px 0; }
+.doc pre.output { background: transparent; border: 1px solid var(--rule); color: var(--muted); margin-top: 0; }
+.doc .out-label { font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
+.doc .tbl-hold { overflow-x: auto; margin: 16px 0; }
 .doc table { border-collapse: collapse; width: 100%; font-size: 15px; }
-.doc th, .doc td { border: 1px solid var(--rule); padding: 7px 10px; text-align: left; vertical-align: top; }
-.doc th { background: var(--surface-2); font-weight: 600; }
-.doc .aside { border-left: 3px solid var(--rule); padding: 8px 14px; margin: 22px 0; color: var(--muted); font-size: 15px; }
-.doc .small { color: var(--muted); font-size: 14.5px; }
-.doc figure { margin: 24px 0; } .doc figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
-.doc figcaption { font-size: 14.5px; color: var(--muted); margin-top: 10px; }
-.doc details.answers { margin-top: 18px; } .doc details.answers summary { cursor: pointer; font-weight: 600; }
-.doc footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--rule); font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.doc th, .doc td { border-bottom: 1px solid var(--rule); padding: 8px 12px 8px 0; text-align: left; vertical-align: top; }
+.doc th { font-weight: 600; color: var(--muted); font-size: 14px; }
+.doc .aside { padding-left: 16px; border-left: 2px solid var(--rule); margin: 24px 0; color: var(--muted); }
+.doc .small { color: var(--muted); font-size: 15px; }
+.doc figure { margin: 28px 0; } .doc figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
+.doc figcaption { font-size: 15px; color: var(--muted); margin-top: 10px; }
+.doc details.answers { margin-top: 20px; } .doc details.answers summary { cursor: pointer; font-weight: 600; }
 /* practice runner */
-.runner { border: 1px solid var(--rule); background: var(--surface); margin: 14px 0 6px; }
-.runner .rcode { display: block; width: 100%; border: 0; border-bottom: 1px solid var(--rule); background: transparent; color: var(--ink);
+.runner { background: var(--surface); border-radius: 8px; margin: 16px 0 6px; overflow: hidden; }
+.runner .rcode { display: block; width: 100%; border: 0; background: transparent; color: var(--ink);
   font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; padding: 14px 16px; resize: none; overflow: hidden; tab-size: 4; white-space: pre; overflow-x: auto; }
-.runner .rcode:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
-.runner .rbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; }
-.runner button { font-family: var(--f-mono); font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 2px; cursor: pointer;
-  border: 1px solid var(--accent); background: var(--accent); color: var(--bg); }
-.runner .rreset { background: transparent; color: var(--muted); border-color: var(--rule); }
+.runner .rcode:focus { outline: none; }
+.runner .rbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 16px 12px; }
+.runner button { font: inherit; font-size: 14px; font-weight: 600; padding: 4px 14px; border-radius: 6px; cursor: pointer;
+  border: 0; background: var(--ink); color: var(--bg); }
+.runner .rreset { background: transparent; color: var(--muted); padding: 4px 2px; font-weight: 500; }
 .runner button:disabled { opacity: .5; cursor: wait; }
-.runner .rhint { font-size: 13px; color: var(--muted); }
-.runner .rout { margin: 0; border: 0; border-top: 1px solid var(--rule); background: var(--bg); color: var(--ink); }
+.runner .rhint { font-size: 13px; color: var(--muted); margin-left: auto; }
+.runner .rout { margin: 0; border-radius: 0; border-top: 1px solid var(--rule); background: transparent; color: var(--ink); }
 .runner .rout.err { color: var(--signal); }
 </style>
 </head>
 <body>
 <!--CHROME:START-->
 <style>
-  .note-chrome{position:sticky;top:0;z-index:40;background:var(--surface);
-    border-bottom:1px solid var(--rule);font-family:var(--f-mono);font-size:11.5px}
-  .note-chrome .inner{max-width:940px;margin:0 auto;padding:10px 24px;
-    display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
-  .note-chrome a{color:var(--accent);text-decoration:none}
-  .note-chrome a:hover{text-decoration:underline}
-  .crumb{color:var(--muted);letter-spacing:.06em}
-  .crumb b{color:var(--ink);font-weight:600}
+  .note-chrome{font-size:14px;color:var(--muted)}
+  .note-chrome .inner{max-width:720px;margin:0 auto;padding:20px 20px 0;
+    display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}
+  .note-chrome a{color:var(--muted);text-decoration:none}
+  .note-chrome a:hover{color:var(--ink)}
   .note-chrome .spacer{flex:1 1 auto}
-  .nav-adj{display:inline-flex;gap:7px;align-items:baseline;max-width:260px}
-  .nav-dir{color:var(--muted);white-space:nowrap}
+  .nav-adj{display:inline-flex;gap:6px;align-items:baseline;max-width:220px}
   .nav-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #theme-toggle{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;
-    text-transform:uppercase;font-weight:600;color:var(--muted);background:transparent;
-    border:1px solid var(--rule);border-radius:2px;padding:5px 9px;cursor:pointer;line-height:1}
-  #theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
   @media print{.note-chrome{display:none}}
 </style>
 <nav class="note-chrome"><div class="inner">
-  <a href="../../../">&larr; All notes</a>
-  <span class="crumb">LLM 101 / <b>&sect;2</b></span>
+  <a href="../../../">Notes</a>
+  <span class="crumb">LLM 101 &middot; &sect;2</span>
   <span class="spacer"></span>
   <a class="nav-adj" href="../../llm-101/01-what-is-a-large-language-model/"><span class="nav-dir">&larr;</span><span class="nav-t">What a Language Model Actually Does</span></a>
   
@@ -99,7 +87,7 @@ try{localStorage.removeItem('aen-theme')}catch(e){}
 <div class="wrap"><div class="doc">
 <h1>How the Machine Is Built</h1>
 <p class="lead">LLM 101 · Section 2. The transformer: why it replaced RNNs, how attention and self-attention work, multi-head attention, the three model families, position and context length, and the KV cache.</p>
-<nav class="toc"><h2>Contents</h2><ol><li><a href="#s1">Why RNNs failed at scale</a></li><li><a href="#s2">Attention</a></li><li><a href="#s3">Self-attention</a></li><li><a href="#s4">Multi-head attention</a></li><li><a href="#s5">Encoder-only, decoder-only and encoder-decoder models</a></li><li><a href="#s6">Why decoder-only models dominate</a></li><li><a href="#s7">Positional encoding and the context window</a></li><li><a href="#s8">The KV cache</a></li><li><a href="#summary">Summary</a></li><li><a href="#review">Review questions</a></li></ol></nav>
+<nav class="toc"><h2>On this page</h2><ol><li><a href="#s1">Why RNNs failed at scale</a></li><li><a href="#s2">Attention</a></li><li><a href="#s3">Self-attention</a></li><li><a href="#s4">Multi-head attention</a></li><li><a href="#s5">Encoder-only, decoder-only and encoder-decoder models</a></li><li><a href="#s6">Why decoder-only models dominate</a></li><li><a href="#s7">Positional encoding and the context window</a></li><li><a href="#s8">The KV cache</a></li><li><a href="#summary">Summary</a></li><li><a href="#review">Review questions</a></li></ol></nav>
 
 <section class="sect" id="s1">
 <h2>1. Why RNNs failed at scale</h2>
@@ -164,9 +152,9 @@ a, b = best_of_5(one_after_another), best_of_5(all_at_once)
 print(f"one after another : {a * 1000:7.2f} ms")
 print(f"all at once       : {b * 1000:7.2f} ms   ({a / b:.0f}x faster)")
 
-# Then try: set n = 4000. Which time grows faster?</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">one after another :   17.55 ms
-all at once       :    3.56 ms   (5x faster)</pre>
+# Then try: set n = 4000. Which time grows faster?</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">one after another :   13.53 ms
+all at once       :    3.34 ms   (4x faster)</pre>
 <p><strong>Try:</strong> rewrite <code>one_after_another</code> so it doesn't need the loop. <span class="small">Result: you can't: each <code>h</code> needs the previous one. That dependency is what stopped RNNs using a GPU.</span></p>
 <p class="small">On a laptop CPU the gap is modest and noisy (about 4–5× here); on a GPU, which runs thousands of independent operations at once, it is far larger.</p>
 
@@ -222,7 +210,7 @@ for text in ["The animal didn't cross the street because it was too tired",
 <p class="small">This one needs torch, transformers, which can't run in a browser. Run it locally:</p><pre class="code">cd ~/Downloads/ai-engineer-notes/exercises
 source .venv/bin/activate
 python llm-101/02/02_what_it_attends_to.py</pre>
-<div class="out-label">Output from a real run</div><pre class="output">The animal didn't cross the street because it was too tired
+<div class="out-label">Output</div><pre class="output">The animal didn't cross the street because it was too tired
    because  0.31
    it       0.19
    animal   0.10
@@ -334,8 +322,8 @@ print(f"\nbank before: water {E[2, 0]:.2f}  money {E[2, 1]:.2f}")
 print(f"bank after : water {new_bank[0]:.2f}  money {new_bank[1]:.2f}")
 
 # Then try: replace river with savings = [0.0, 2.6, 0.5, 0.0].
-# Then try: delete "/ np.sqrt(4)" and watch the shares.</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">  the    score 2.96   share 0.137
+# Then try: delete "/ np.sqrt(4)" and watch the shares.</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">  the    score 2.96   share 0.137
   river  score 4.56   share 0.306
   bank   score 5.76   share 0.557
 
@@ -395,8 +383,8 @@ for name, cols in [("one big head", slice(0, 4)), ("head A (meaning)", slice(0, 
     print(f"{name:&lt;17} " + "  ".join(f"{w} {v:.2f}" for w, v in zip(words, s)))
 
 # Then try: change "the" to [0.3, 2.5, 2.5, 0.0], giving it a large money number.
-# Which head notices?</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">one big head      the 0.14  river 0.31  bank 0.56
+# Which head notices?</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">one big head      the 0.14  river 0.31  bank 0.56
 head A (meaning)  the 0.03  river 0.33  bank 0.64
 head B (generic)  the 0.59  river 0.19  bank 0.22</pre>
 <p><strong>Try:</strong> change <code>the</code> to <code>[0.3, 2.5, 2.5, 0.0]</code>, giving it a large money value. <span class="small">Result: head A's weight for "the" jumps from 0.03 to 0.30; head B is unchanged because it never sees the money value.</span></p>
@@ -473,8 +461,8 @@ for name, m in [("encoder: sees everything", encoder), ("decoder: looks left onl
         print(f"   {w:&lt;6}" + "".join(f"{v:7.2f}" for v in row))
 
 # Then try: add a fourth word, "flooded" = [2.4, 0.0, 0.6, 0.0], and change the 3
-# in triu_indices to 4. Which rows still match between the two, and which stop?</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">encoder: sees everything
+# in triu_indices to 4. Which rows still match between the two, and which stop?</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">encoder: sees everything
    the      0.78   0.09   0.14
    river    0.06   0.73   0.21
    bank     0.14   0.31   0.56
@@ -540,7 +528,7 @@ print(f"ratio                                  : {(n - 1) / (n * 0.15):.1f}x")
 <p class="small">This one needs tiktoken, which can't run in a browser. Run it locally:</p><pre class="code">cd ~/Downloads/ai-engineer-notes/exercises
 source .venv/bin/activate
 python llm-101/02/06_training_signal.py</pre>
-<div class="out-label">Output from a real run</div><pre class="output">passage: 46 tokens
+<div class="out-label">Output</div><pre class="output">passage: 46 tokens
 decoder-only, predict every next token : 45 training signals
 encoder-style, predict 15% hidden ones : 7 training signals
 ratio                                  : 6.5x</pre>
@@ -617,8 +605,8 @@ for add in (False, True):
     print(f"{label}  dog/bites/man {np.round(a, 2)}   man/bites/dog {np.round(b, 2)}")
 
 # Then try: make the position signal tiny by writing E = E + 0.01 * np.hstack(...).
-# Can you still tell the two sentences apart?</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">without position  dog/bites/man [1.74 0.55 1.16 0.  ]   man/bites/dog [1.74 0.55 1.16 0.  ]
+# Can you still tell the two sentences apart?</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">without position  dog/bites/man [1.74 0.55 1.16 0.  ]   man/bites/dog [1.74 0.55 1.16 0.  ]
 with position   dog/bites/man [2.01 1.3  1.06 0.99]   man/bites/dog [2.59 0.34 0.93 0.98]</pre>
 <p><strong>Try:</strong> make the position signal tiny: <code>E = E + 0.01 * np.hstack(...)</code>. <span class="small">Result: at two decimals the two sentences look identical again; a position signal that is too weak is as good as none.</span></p>
 
@@ -702,11 +690,11 @@ per_token = 2 * 32 * 1024 * 2                      # keys and values, 32 layers,
 print(f"\ncache memory for an 8B-class model: {per_token // 1024} KiB per token, "
       f"{per_token * 8192 / 1024**3:.2f} GiB at 8,192 tokens")
 
-# Then try: set n = 800. Does the gap double, or more?</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Edit the code and run it. It runs in your browser; ⌘/Ctrl + Enter also runs.</span></div><pre class="rout" hidden></pre></div>
-<div class="out-label">Output from a real run</div><pre class="output">key rows computed, no cache : 80,200
+# Then try: set n = 800. Does the gap double, or more?</textarea><div class="rbar"><button class="rrun" type="button">Run</button><button class="rreset" type="button">Reset</button><span class="rhint">Editable · ⌘/Ctrl + Enter</span></div><pre class="rout" hidden></pre></div>
+<div class="out-label">Output</div><pre class="output">key rows computed, no cache : 80,200
 key rows computed, cache    : 400
-time, no cache :   15.6 ms
-time, cache    :    2.5 ms   (6x faster)
+time, no cache :   15.9 ms
+time, cache    :    3.3 ms   (5x faster)
 
 cache memory for an 8B-class model: 128 KiB per token, 1.00 GiB at 8,192 tokens</pre>
 <p><strong>Try:</strong> set <code>n = 800</code>. <span class="small">Result: about 320,400 key computations against 800: the work saved doubles, and the timing gap widens with it.</span></p>
@@ -723,8 +711,6 @@ cache memory for an 8B-class model: 128 KiB per token, 1.00 GiB at 8,192 tokens<
 <ol class="review"><li>Generation is one token at a time. Doesn't that make transformers sequential too?</li><li>In the "river bank" example, why did bank take 0.306 of river but only 0.137 of the?</li><li>Why divide attention scores by √d?</li><li>Why use 32 heads of 128 instead of 32 full-width heads?</li><li>Why can't a generative model be trained as an encoder that sees everything?</li><li>Going from 8k to 128k context is 16× the tokens. Roughly what happens to attention cost?</li><li>A chat app slows down as a conversation gets longer, even though replies stay short. Why?</li></ol>
 <details class="answers"><summary>Answers</summary><ol class="review"><li>At generation time, yes. The parallelism is in training, where the whole text is known and every position can be scored at once.</li><li>River scored higher in step 1 (4.56 against 2.96) because it shares bank's large "water" value; softmax then widened the gap.</li><li>Dot-product variance grows with d, which pushes softmax to near 0 and 1 and stops the small weights learning. Dividing by √d keeps the variance around 1.</li><li>Cost: 32 × 128 is the same total width as one 4,096-wide head. Full-width heads would cost 32 times as much.</li><li>It would see the token it is supposed to predict (data leakage), which teaches nothing usable at generation time.</li><li>About 256×, since the cost grows with the square of the length.</li><li>Each new token attends over the whole history, which keeps growing, and so does the KV cache. Trimming or summarising history helps.</li></ol></details>
 </section>
-
-<footer><span>How the Machine Is Built</span><span>Every output on this page comes from running the code.</span></footer>
 </div></div>
 <script src="../../../assets/runner.js"></script>
 <script src="../../../assets/gate.js"></script>
