@@ -19,7 +19,7 @@
     {
       "topic": "python",
       "section": 7,
-      "title": "Where Data Goes When the Program Ends",
+      "title": "File Handling &amp; Serialization",
       "path": "notes/python/07-file-handling-and-serialization",
       "track": "prerequisites",
       "added": "2026-09-21"
