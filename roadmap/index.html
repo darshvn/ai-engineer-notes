@@ -158,15 +158,13 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
   function safeUrl(u) { return /^https?:\/\//i.test(String(u || '')) ? String(u) : ''; }
 
   // A note page exists for some sections; its sections follow the item order.
-  function notePage(topicName, sectionName, indexInSection) {
-    var m = /^(\d+)\./.exec(sectionName);
-    if (!m) return null;
-    var key = slug(topicName) + '#' + Number(m[1]);
+  function notePage(topicName, sectionNumber, indexInSection) {
+    var key = slug(topicName) + '#' + sectionNumber;
     var path = notesByKey[key];
     return path ? '../' + path + '/#s' + (indexInSection + 1) : null;
   }
 
-  function itemHTML(item, trackName, topicName, sectionName, idx) {
+  function itemHTML(item, trackName, topicName, sectionNumber, idx) {
     var cls = item.status === 'Done' ? ' done' : item.status === 'Skipped' ? ' skip' : '';
     var links = '';
     var url = item.resource && safeUrl(item.resource.url), also = safeUrl(item.also);
@@ -176,7 +174,7 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
         esc(item.resource.label || '') + '">' + label + '</a>';
     }
     if (also) links += '<a class="pill" href="' + esc(also) + '" target="_blank" rel="noopener noreferrer">Also</a>';
-    var np = item.kind === 'item' ? notePage(topicName, sectionName, idx) : null;
+    var np = item.kind === 'item' ? notePage(topicName, sectionNumber, idx) : null;
     if (np) links += '<a class="pill note-page" href="' + np + '">Note page</a>';
     if (item.note) links += '<button class="pill note-btn" type="button" aria-expanded="false">Note</button>';
     if (item.kind === 'item') {
@@ -230,13 +228,13 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-fa
         html += '<details class="topic"><summary><span class="topic-name">' + esc(topic.name) + '</span>' +
           '<span class="topic-meta">' + tDone + ' / ' + tItems +
           (dates.length ? ' · ' + dates[0] + ' → ' + dates[dates.length - 1] : '') + '</span></summary>';
-        topic.sections.forEach(function (section) {
+        topic.sections.forEach(function (section, si) {
           html += '<div class="section"><h3>' + esc(section.name) + '</h3>';
           var n = 0;
-          (section.items || []).forEach(function (i) { html += itemHTML(i, track.name, topic.name, section.name, n); if (i.kind === 'item') n++; });
+          (section.items || []).forEach(function (i) { html += itemHTML(i, track.name, topic.name, si + 1, n); if (i.kind === 'item') n++; });
           (section.subsections || []).forEach(function (sub) {
             html += '<div class="sub"><h4>' + esc(sub.name) + '</h4>';
-            sub.items.forEach(function (i) { html += itemHTML(i, track.name, topic.name, section.name, n); if (i.kind === 'item') n++; });
+            sub.items.forEach(function (i) { html += itemHTML(i, track.name, topic.name, si + 1, n); if (i.kind === 'item') n++; });
             html += '</div>';
           });
           html += '</div>';

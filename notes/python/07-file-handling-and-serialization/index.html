@@ -1,0 +1,1237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Where Data Goes When the Program Ends</title>
+<meta name="description" content="Text files, CSV and JSON, pickle, folders and log files: five ways to put data on disk and get it back, and what each one quietly changes on the way.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
+<style>
+:root {
+  --bg:        #E9EBE7;
+  --surface:   #F6F7F4;
+  --surface-2: #DFE3DE;
+  --ink:       #14181A;
+  --muted:     #59635F;
+  --rule:      #C9CFC8;
+  --accent:    #146B5F;
+  --accent-dim:#DCE8E4;
+  --signal:    #9A2C6B;
+  --signal-dim:#F0DEE8;
+
+  --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --f-body:    "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --f-mono:    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --col: 66ch;
+  --wide: 860px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:        #121614;
+    --surface:   #1A201D;
+    --surface-2: #232A27;
+    --ink:       #E6EAE6;
+    --muted:     #929F99;
+    --rule:      #2E3733;
+    --accent:    #56BCAC;
+    --accent-dim:#1C2E2B;
+    --signal:    #E982B8;
+    --signal-dim:#33202B;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:        #121614;
+  --surface:   #1A201D;
+  --surface-2: #232A27;
+  --ink:       #E6EAE6;
+  --muted:     #929F99;
+  --rule:      #2E3733;
+  --accent:    #56BCAC;
+  --accent-dim:#1C2E2B;
+  --signal:    #E982B8;
+  --signal-dim:#33202B;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16.5px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 0 24px 96px;
+}
+
+/* ---------- masthead ---------- */
+
+.mast {
+  padding: 72px 0 40px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+}
+.eyebrow span.sep { color: var(--rule); }
+h1 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+.standfirst {
+  font-family: var(--f-display);
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 56ch;
+  margin: 0;
+}
+
+/* ---------- how to use ---------- */
+
+.howto {
+  margin: 40px 0 0;
+  padding: 24px 26px;
+  background: var(--accent-dim);
+  border-left: 3px solid var(--accent);
+}
+.howto h2 {
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.howto p { margin: 0 0 10px; max-width: 62ch; font-size: 15.5px; }
+.howto p:last-child { margin-bottom: 0; }
+
+/* ---------- sections ---------- */
+
+section.topic {
+  padding-top: 64px;
+  scroll-margin-top: 24px;
+}
+.topic-head {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 0 18px;
+  align-items: start;
+  border-top: 1px solid var(--rule);
+  padding-top: 20px;
+}
+.num {
+  font-family: var(--f-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--signal);
+  padding-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+h2.topic-title {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: clamp(1.7rem, 3.6vw, 2.2rem);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.body { max-width: var(--col); margin-left: 64px; }
+@media (max-width: 640px) { .body { margin-left: 0; } .topic-head { grid-template-columns: 34px 1fr; gap: 0 12px; } }
+
+.body p { margin: 18px 0; }
+.body ul, .body ol { margin: 18px 0; padding-left: 22px; }
+.body li { margin: 7px 0; }
+
+
+code, .mono { font-family: var(--f-mono); font-size: 0.88em; }
+.body code {
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+strong { font-weight: 600; }
+em { font-style: italic; }
+
+.formula {
+  font-family: var(--f-mono);
+  font-size: 14.5px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 16px 18px;
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.75;
+  margin: 22px 0;
+}
+
+/* misconception */
+.bust {
+  border: 1px solid var(--signal);
+  background: var(--signal-dim);
+  padding: 18px 20px;
+  margin: 26px 0;
+}
+.bust .tag {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--signal);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+.bust p { margin: 0 0 10px; font-size: 15.5px; }
+.bust p:last-child { margin-bottom: 0; }
+
+/* takeaway */
+.takeaway {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: baseline;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 14px 0;
+  margin: 28px 0 8px;
+}
+.takeaway .tag {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.takeaway p { margin: 0; font-size: 15.5px; }
+
+/* figures */
+figure {
+  margin: 34px 0;
+  max-width: var(--wide);
+}
+figure .svg-hold { overflow-x: auto; }
+figure svg { max-width: 100%; height: auto; display: block; color: var(--ink); }
+figcaption {
+  font-family: var(--f-body);
+  font-size: 14.5px;
+  line-height: 1.62;
+  color: var(--muted);
+  margin-top: 14px;
+  padding-left: 16px;
+  border-left: 2px solid var(--rule);
+  max-width: 66ch;
+}
+figcaption .mono, figcaption code {
+  font-family: var(--f-mono);
+  font-size: 0.88em;
+  color: var(--ink);
+}
+figcaption em { color: var(--ink); }
+
+/* tables */
+.tbl-hold { overflow-x: auto; margin: 26px 0; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14.5px;
+  min-width: 520px;
+}
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+th {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--ink);
+}
+td:first-child { font-weight: 500; }
+tbody tr:last-child td { border-bottom: 0; }
+td.mono, th.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* retrieval */
+.retrieval { margin-top: 80px; border-top: 3px double var(--rule); padding-top: 40px; }
+.retrieval h2 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 2rem;
+  margin: 0 0 10px;
+  letter-spacing: -0.015em;
+}
+.retrieval > p { max-width: var(--col); color: var(--muted); margin: 0 0 26px; }
+details {
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  margin-bottom: 10px;
+}
+details[open] { background: var(--surface-2); }
+summary {
+  cursor: pointer;
+  padding: 14px 18px;
+  font-weight: 500;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  align-items: baseline;
+}
+summary::-webkit-details-marker { display: none; }
+summary::before {
+  content: "Q" counter(qc);
+  counter-increment: qc;
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  color: var(--signal);
+  font-weight: 600;
+}
+.qlist { counter-reset: qc; }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details .ans {
+  padding: 0 18px 16px 58px;
+  font-size: 15.5px;
+  color: var(--muted);
+  max-width: 70ch;
+}
+details .ans strong { color: var(--ink); }
+
+/* schedule */
+.sched { margin-top: 64px; border-top: 1px solid var(--rule); padding-top: 32px; }
+.sched h2 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 1.7rem;
+  margin: 0 0 8px;
+}
+.sched > p { max-width: var(--col); color: var(--muted); margin: 0 0 22px; }
+
+footer {
+  margin-top: 72px;
+  padding-top: 22px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+<style>
+/* ---- worked-example format ----------------------------------------------
+   Each section runs: See it (a real example) → Words (defined before use)
+   → Walk it (worked steps) → The rule (stated last, never first).
+   The old notes led with the abstract claim; that order is reversed here. */
+
+.step {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 30px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.step::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+.step.rule-step { color: var(--signal); }
+.step.rule-step::after { background: var(--signal); opacity: 0.35; }
+
+/* the concrete opening example */
+.showcase {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 20px 22px;
+  margin: 16px 0;
+  overflow-x: auto;
+}
+.showcase pre {
+  font-family: var(--f-mono);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre;
+}
+.showcase .hl { color: var(--signal); font-weight: 600; }
+.showcase .dim { color: var(--muted); }
+.showcase .out { color: var(--accent); }
+.caption-note {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 8px 0 0;
+  font-style: italic;
+}
+
+/* vocabulary — named before the process uses them */
+dl.words { margin: 14px 0; display: flex; flex-direction: column; gap: 12px; }
+dl.words > div {
+  display: grid;
+  grid-template-columns: 152px 1fr;
+  gap: 16px;
+  align-items: baseline;
+}
+dl.words dt {
+  font-family: var(--f-mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+dl.words dd { margin: 0; font-size: 15.5px; }
+@media (max-width: 620px) {
+  dl.words > div { grid-template-columns: 1fr; gap: 2px; }
+}
+
+/* the general statement, arrived at rather than asserted */
+.rule {
+  border: 1px solid var(--signal);
+  background: var(--signal-dim);
+  padding: 18px 22px;
+  margin: 14px 0 8px;
+  font-size: 16.5px;
+  line-height: 1.55;
+}
+.rule p { margin: 0 0 10px; }
+.rule p:last-child { margin-bottom: 0; }
+
+/* one question, immediately after the thing it tests */
+.check {
+  border-left: 3px solid var(--accent);
+  padding: 4px 0 4px 18px;
+  margin: 26px 0 8px;
+}
+.check .q { font-size: 15.5px; margin: 0 0 8px; }
+.check details { border: 0; background: transparent; margin: 0; }
+.check summary {
+  display: inline-block;
+  padding: 0;
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 600;
+}
+.check summary::before { content: none; }
+.check summary:hover { text-decoration: underline; }
+.check .ans {
+  padding: 10px 0 0;
+  font-size: 15.5px;
+  color: var(--muted);
+  max-width: 66ch;
+}
+.check .ans strong { color: var(--ink); }
+
+/* a fact worth stopping on — used sparingly, never for colour */
+.gotcha {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--signal);
+  background: var(--surface);
+  padding: 16px 20px;
+  margin: 24px 0;
+  font-size: 15.5px;
+}
+.gotcha p { margin: 0 0 10px; }
+.gotcha p:last-child { margin: 0; }
+.gotcha b {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--signal);
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+</style>
+
+<style>
+  :root { color-scheme: light dark; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+
+/* ---- orientation: the syllabus line each section answers ---------------- */
+.contents {
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  padding: 22px 26px;
+  margin: 34px 0 0;
+}
+.contents h2 {
+  font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .14em;
+  text-transform: uppercase; margin: 0 0 14px; color: var(--muted); font-weight: 600;
+}
+.contents ol { list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 9px; counter-reset: toc; }
+.contents li { display: grid; grid-template-columns: 30px 1fr; gap: 14px; align-items: baseline; }
+.contents li::before {
+  content: counter(toc, decimal-leading-zero); counter-increment: toc;
+  font-family: var(--f-mono); font-size: 11.5px; color: var(--signal);
+  font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.contents a { color: var(--ink); text-decoration: none;
+  border-bottom: 1px solid transparent; font-size: 15.5px; }
+.contents a:hover, .contents a:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
+.contents .said { display: block; font-family: var(--f-mono); font-size: 11.5px;
+  color: var(--muted); margin-top: 2px; }
+
+.item-name {
+  grid-column: 2; font-family: var(--f-mono); font-size: 11.5px;
+  color: var(--muted); margin-top: 7px; line-height: 1.45;
+}
+.item-name::before { content: "covers: "; color: var(--signal); }
+
+/* ---- premise: where we are, what we have, what we want, how ------------- */
+.premise {
+  border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+  background: var(--surface); padding: 16px 20px; margin: 14px 0 6px;
+  display: flex; flex-direction: column; gap: 11px;
+}
+.premise-row { display: grid; grid-template-columns: 124px 1fr; gap: 16px; align-items: baseline; }
+.pk { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--accent); font-weight: 600; }
+.pv { font-size: 15.5px; line-height: 1.55; }
+.plan { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.plan .chip { font-family: var(--f-mono); font-size: 12px; font-weight: 600; color: var(--accent);
+  background: var(--accent-dim); border: 1px solid var(--accent); padding: 3px 10px;
+  border-radius: 2px; white-space: nowrap; }
+.plan .arr { color: var(--muted); font-family: var(--f-mono); }
+@media (max-width: 620px) { .premise-row { grid-template-columns: 1fr; gap: 3px; } }
+
+/* ---- exercises: every section ends with something to run -------------- */
+.step.do-step { color: var(--accent); }
+.step.do-step::after { background: var(--accent); opacity: 0.35; }
+.exercise {
+  border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+  background: var(--surface); padding: 14px 20px 16px; margin: 10px 0 8px;
+}
+.exercise > p { margin: 10px 0; font-size: 15.5px; }
+.exercise .ex-file { font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+.exercise .ex-file a { color: var(--accent); }
+.exercise details { margin: 8px 0; }
+.exercise summary {
+  cursor: pointer; list-style: none; display: inline-block;
+  font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--accent); font-weight: 600;
+}
+.exercise summary::-webkit-details-marker { display: none; }
+.exercise summary::before { content: "\25B8  "; }
+.exercise details[open] > summary::before { content: "\25BE  "; }
+.exercise summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.exercise .showcase { margin: 8px 0 4px; }
+.exercise .ex-ans { font-size: 15px; color: var(--muted); margin: 8px 0 0; }
+.exercise .ex-ans strong { color: var(--ink); }
+.exercise .ex-note { font-size: 14.5px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 10px; margin-top: 12px; }
+.exercise .ex-note b { color: var(--signal); font-weight: 600; }
+/* ---- watch it: the exact minutes of the videos that teach the same idea -- */
+.step.watch-step { color: var(--signal); }
+.step.watch-step::after { background: var(--signal); opacity: 0.35; }
+.watch { border: 1px solid var(--rule); border-left: 3px solid var(--signal);
+  background: var(--surface); padding: 14px 20px 14px; margin: 10px 0 28px; }
+.watch ol { list-style: none; padding: 0; margin: 0; }
+.watch li { margin: 0 0 14px; }
+.watch li a { color: var(--ink); font-weight: 600; text-decoration-color: var(--signal); text-underline-offset: 3px; }
+.watch .wspan { font-family: var(--f-mono); font-size: 11.5px; color: var(--signal); margin-left: 10px; white-space: nowrap; }
+.watch li p { margin: 4px 0 0; font-size: 15px; color: var(--muted); line-height: 1.55; }
+.watch .bridge { border-top: 1px solid var(--rule); padding-top: 10px; margin: 4px 0 0; font-size: 14.5px; }
+.watch .bridge b { display: block; font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--signal); font-weight: 600; margin-bottom: 4px; }
+.run-setup { margin: 22px 0 0; padding: 18px 22px; border: 1px solid var(--rule); background: var(--surface); }
+.run-setup h2 { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 10px; color: var(--accent); font-weight: 600; }
+.run-setup p { margin: 0 0 10px; font-size: 15.5px; max-width: 64ch; }
+.run-setup a { color: var(--accent); }
+.run-setup pre { font-family: var(--f-mono); font-size: 13px; background: var(--bg); border: 1px solid var(--rule); padding: 12px 14px; margin: 0 0 10px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<!--CHROME:START-->
+<style>
+  .note-chrome{position:sticky;top:0;z-index:40;background:var(--surface);
+    border-bottom:1px solid var(--rule);font-family:var(--f-mono);font-size:11.5px}
+  .note-chrome .inner{max-width:940px;margin:0 auto;padding:10px 24px;
+    display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
+  .note-chrome a{color:var(--accent);text-decoration:none}
+  .note-chrome a:hover{text-decoration:underline}
+  .crumb{color:var(--muted);letter-spacing:.06em}
+  .crumb b{color:var(--ink);font-weight:600}
+  .note-chrome .spacer{flex:1 1 auto}
+  .nav-adj{display:inline-flex;gap:7px;align-items:baseline;max-width:260px}
+  .nav-dir{color:var(--muted);white-space:nowrap}
+  .nav-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #theme-toggle{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;font-weight:600;color:var(--muted);background:transparent;
+    border:1px solid var(--rule);border-radius:2px;padding:5px 9px;cursor:pointer;line-height:1}
+  #theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
+  @media print{.note-chrome{display:none}}
+</style>
+<nav class="note-chrome"><div class="inner">
+  <a href="../../../">&larr; All notes</a>
+  <span class="crumb">Python / <b>&sect;7</b></span>
+  <span class="spacer"></span>
+  
+  
+  <button id="theme-toggle" type="button">Theme</button>
+</div></nav>
+<script>
+(function(){var r=document.documentElement,b=document.getElementById('theme-toggle'),K='aen-theme';
+function sd(){return !!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)}
+function ap(t){t?r.setAttribute('data-theme',t):r.removeAttribute('data-theme');
+var d=t?t==='dark':sd();b.textContent=d?'Light':'Dark';
+b.setAttribute('aria-label','Switch to '+(d?'light':'dark')+' theme')}
+var s=null;try{s=localStorage.getItem(K)}catch(e){}ap(s);
+b.addEventListener('click',function(){var c=r.getAttribute('data-theme'),
+d=c?c==='dark':sd(),n=d?'light':'dark';ap(n);try{localStorage.setItem(K,n)}catch(e){}});})();
+</script>
+<!--CHROME:END-->
+<div class="wrap">
+
+<header class="mast">
+  <div class="eyebrow">
+    <span>Python</span><span class="sep">/</span>
+    <span>&sect;7</span>
+  </div>
+  <h1>Where Data Goes When the Program Ends</h1>
+  <p class="standfirst">Text files, CSV and JSON, pickle, folders and log files: five ways to put data on disk and get it back, and what each one quietly changes on the way.</p>
+</header>
+
+<div class="howto">
+  <h2>How to read this</h2>
+  <p>Every section runs the same way: <strong>see it</strong>, <strong>words</strong>, <strong>walk it</strong>, <strong>the rule</strong>. Every output shown was produced by running the code, not written from memory.</p>
+  <p>After the rule, <strong>Watch it</strong> points to the exact minutes of CampusX's File Handling session, or the Python docs where CampusX doesn't cover the idea, and says where their words differ from these. Read first, then watch.</p>
+  <p>Each section ends with one question. Answer it before opening it, then run the exercise.</p>
+</div>
+
+<div class="run-setup">
+  <h2>Running the exercises</h2>
+  <p>These use only the standard library, so any Python 3.9 or newer runs them. Run them from the <code>exercises</code> folder: section 04 depends on it. Each script writes into its own <code>out/</code> folder and nowhere else.</p>
+  <pre>cd ~/Downloads/ai-engineer-notes/exercises
+source .venv/bin/activate
+python python/07/01_text_files.py</pre>
+</div>
+
+<nav class="contents">
+  <h2>What's in here</h2>
+  <ol>
+    <li><a href="#s1">Writing a file, then reading it back<span class="said">Reading/writing text files</span></a></li>
+    <li><a href="#s2">Tables and nested data: CSV and JSON<span class="said">CSV, JSON handling</span></a></li>
+    <li><a href="#s3">Pickle: exact copies, with a catch<span class="said">Pickle (pros &amp; cons)</span></a></li>
+    <li><a href="#s4">Folders, paths and where Python is standing<span class="said">Working with directories (os, pathlib)</span></a></li>
+    <li><a href="#s5">Logs that outlive the terminal<span class="said">Logging to files</span></a></li>
+  </ol>
+</nav>
+
+<!-- ============================ 1 ============================ -->
+<section class="topic" id="s1">
+  <div class="topic-head">
+    <div class="num">01</div>
+    <h2 class="topic-title">Writing a file, then reading it back</h2>
+    <div class="item-name">Reading/writing text files</div>
+  </div>
+  <div class="body">
+    <div class="premise">
+      <div class="premise-row"><span class="pk">Where we are</span><span class="pv">Everything so far lived in variables, and variables vanish when the program stops.</span></div>
+      <div class="premise-row"><span class="pk">What we have</span><span class="pv">A few strings.</span></div>
+      <div class="premise-row"><span class="pk">What we want</span><span class="pv">The strings in a file, and back in the program next time.</span></div>
+      <div class="premise-row"><span class="pk">How</span><span class="pv"><span class="plan"><span class="chip">1 &middot; Open</span><span class="arr">&rarr;</span><span class="chip">2 &middot; Write or read</span><span class="arr">&rarr;</span><span class="chip">3 &middot; Close</span></span></span></div>
+    </div>
+
+    <div class="step">See it</div>
+    <p>Write two lines, add a third, read everything back:</p>
+
+    <div class="showcase"><pre>with open("notes.txt", "w", encoding="utf-8") as f:
+    f.write("tokens\n")
+    f.write("embeddings\n")
+
+with open("notes.txt", "a", encoding="utf-8") as f:
+    f.write("attention\n")
+
+with open("notes.txt", encoding="utf-8") as f:
+    for n, line in enumerate(f, start=1):
+        print(n, repr(line))
+    print(repr(f.read()))</pre></div>
+    <div class="showcase"><pre>1 'tokens\n'
+2 'embeddings\n'
+3 'attention\n'
+<span class="hl">''</span></pre></div>
+
+    <div class="step">Words</div>
+    <dl class="words">
+      <div><dt>file object</dt><dd>What <code>open()</code> hands back. It holds a <em>position</em> in the file (CampusX calls it the buffer, or the cursor) that moves as you read or write.</dd></div>
+      <div><dt>mode</dt><dd>The second argument. <code>"r"</code> read (the default), <code>"w"</code> write, <code>"a"</code> append, <code>"x"</code> create only if new. Add <code>"b"</code> for bytes instead of text.</dd></div>
+      <div><dt>encoding</dt><dd>The rule for turning characters into bytes on disk. <code>"utf-8"</code> handles every language.</dd></div>
+      <div><dt>context manager</dt><dd>The <code>with</code> block. It closes the file when the block ends, even if an error happens inside it.</dd></div>
+    </dl>
+
+    <div class="step">Walk it</div>
+    <p><code>"w"</code> empties the file the moment it opens, before a single write. That's why the first block starts clean every run. <code>"a"</code> opens with the position at the end, so the third line lands after the first two.</p>
+    <p><code>write()</code> writes exactly what you give it. Unlike <code>print()</code>, it adds no newline, so every <code>\n</code> above is there on purpose.</p>
+    <p>Reading comes in three sizes. <code>read()</code> returns the whole file as one string, <code>readline()</code> one line, and <code>for line in f</code> one line per loop. On a 50 MB file of 100-character lines, <code>read()</code> held all 50,000,000 characters in memory at once; the loop held 100.</p>
+    <p>Once the position reaches the end, <code>read()</code> returns an empty string, not an error. That empty string is how a loop knows the file is finished.</p>
+    <p>Opening a file doesn't load it. Writes collect in a small buffer (8,192 bytes) and reach the disk when it fills or when the file closes. After <code>write("Hello world")</code> returned 11, the file on disk was still <strong>0 bytes</strong>; it became 11 at <code>close()</code>. That's the real reason to close, and why <code>with</code> matters: a file left open can lose its last writes.</p>
+
+    <div class="gotcha">
+      <b>"w" deletes first, asks never</b>
+      <p>Open last month's report with <code>"w"</code> by mistake and it's empty before your first write. Use <code>"a"</code> to add, or <code>"x"</code> to refuse if the file already exists.</p>
+    </div>
+    <div class="gotcha">
+      <b>Always say the encoding</b>
+      <p>Without <code>encoding=</code>, Python uses the machine's default. It's UTF-8 on this Mac, but often cp1252 on Windows, where a file with "₹" or Hindi text written on one machine can fail to read on the other.</p>
+    </div>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>Open inside a <code>with</code> block, with the mode you mean and <code>encoding="utf-8"</code>. Write the newlines yourself. Read line by line when the file could be big.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">You open an existing <code>report.txt</code> with <code>"w"</code>, then the program crashes before its first <code>write()</code>. What's in the file now?</p>
+      <details><summary>Show answer</summary>
+        <div class="ans"><strong>Nothing.</strong> <code>"w"</code> truncated it at <code>open()</code>, before any write ran. The crash didn't cause the loss; the mode did.</div>
+      </details>
+    </div>
+  </div>
+  <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=890s">CampusX · Session 10: File Handling</a><span class="wspan">14:50–26:55</span>
+            <p>Open, write, close; the <code>11</code> Colab echoes is <code>write()</code>&rsquo;s return value. Then <code>"w"</code> wiping an existing file next to <code>"a"</code> adding to it.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=2010s">CampusX · same session</a><span class="wspan">33:30–39:30</span>
+            <p><code>read()</code>, <code>read(10)</code>, <code>readline()</code>, and why <code>print</code> doubles the blank lines. He loops with <code>readline()</code>; <code>for line in f</code> does the same in one line.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=2725s">CampusX · same session</a><span class="wspan">45:25–48:00</span>
+            <p><code>with</code>, and the error when you write after the block has closed the file.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=3010s">CampusX · same session</a><span class="wspan">50:10–61:30</span>
+            <p>Reading a file in chunks with <code>read(n)</code>: the pattern for a file bigger than your memory. The best stretch of the session.</p></li>
+          <li><a href="https://docs.python.org/3/tutorial/inputoutput.html#reading-and-writing-files">Python tutorial · Reading and writing files</a><span class="wspan">read</span>
+            <p>The official version, with <code>for line in f</code> and the modes the video skips.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> buffer / cursor = the file position (the real buffer is only 8 KB) · file handler object = file object · with = context manager. Take his reason for closing with care: the file isn&rsquo;t held in RAM and nobody can &ldquo;hack the open stream&rdquo;; closing matters because unflushed writes can be lost.</p>
+      </div>
+            <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/python/07/01_text_files.py">exercises/python/07/01_text_files.py</a></p>
+        <p><strong>Predict first:</strong> how many lines does the file end up with, and what does the final <code>read()</code> return?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 01: write a text file, add to it, read it back.
+# Predict first: how many lines will the file have, and what does the last read() return?
+from pathlib import Path
+
+out = Path(__file__).parent / &quot;out&quot;
+out.mkdir(exist_ok=True)
+notes = out / &quot;notes.txt&quot;
+
+with open(notes, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:      # &quot;w&quot; empties the file first
+    f.write(&quot;tokens\n&quot;)
+    f.write(&quot;embeddings\n&quot;)
+
+with open(notes, &quot;a&quot;, encoding=&quot;utf-8&quot;) as f:      # &quot;a&quot; adds to the end
+    f.write(&quot;attention\n&quot;)
+
+with open(notes, encoding=&quot;utf-8&quot;) as f:           # &quot;r&quot; is the default
+    for n, line in enumerate(f, start=1):
+        print(n, repr(line))
+    print(&quot;read() at the end gives&quot;, repr(f.read()))
+
+# Then try: change &quot;a&quot; to &quot;w&quot; on the second open and run it again.</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>1 &#x27;tokens\n&#x27;
+2 &#x27;embeddings\n&#x27;
+3 &#x27;attention\n&#x27;
+read() at the end gives &#x27;&#x27;</pre></div><p class="ex-ans">Three lines, each ending in <code>\n</code>, and <strong>an empty string</strong> from the last <code>read()</code>, because the loop already moved the position to the end.</p></details>
+        <p><strong>Then try:</strong> change <code>"a"</code> to <code>"w"</code> on the second <code>open</code> and run it again.</p>
+        <details><summary>What happens</summary><p class="ex-ans">Only <code>1 'attention\n'</code> is left. The second <code>"w"</code> emptied the file before writing, wiping the first two lines.</p></details>
+      </div>
+    </div>
+</section>
+
+<!-- ============================ 2 ============================ -->
+<section class="topic" id="s2">
+  <div class="topic-head">
+    <div class="num">02</div>
+    <h2 class="topic-title">Tables and nested data: CSV and JSON</h2>
+    <div class="item-name">CSV, JSON handling</div>
+  </div>
+  <div class="body">
+    <div class="premise">
+      <div class="premise-row"><span class="pk">Where we are</span><span class="pv">Section 01 saved plain text.</span></div>
+      <div class="premise-row"><span class="pk">What we have</span><span class="pv">A list of records, each a dict with a number and a tuple inside.</span></div>
+      <div class="premise-row"><span class="pk">What we want</span><span class="pv">Save them so Excel, pandas or another program can read them, and get the same values back.</span></div>
+      <div class="premise-row"><span class="pk">How</span><span class="pv"><span class="plan"><span class="chip">1 &middot; Serialise</span><span class="arr">&rarr;</span><span class="chip">2 &middot; Write</span><span class="arr">&rarr;</span><span class="chip">3 &middot; Read</span><span class="arr">&rarr;</span><span class="chip">4 &middot; Check the types</span></span></span></div>
+    </div>
+
+    <div class="step">See it</div>
+    <p>The same two records, saved once as CSV and once as JSON, then read back. Asha's record went in as <code>{"name": "Asha", "score": 92, "tags": ("python", "sql")}</code>:</p>
+
+    <div class="showcase"><pre>CSV : <span class="hl">'92'</span> <span class="hl">"('python', 'sql')"</span>
+JSON: <span class="out">92</span> <span class="out">['python', 'sql']</span></pre></div>
+
+    <div class="step">Words</div>
+    <dl class="words">
+      <div><dt>serialisation</dt><dd>Turning a Python object into text or bytes that can be stored or sent. <em>Deserialisation</em> is the way back.</dd></div>
+      <div><dt>CSV</dt><dd>Comma-separated values: a table, one row per line, every cell plain text.</dd></div>
+      <div><dt>JSON</dt><dd>JavaScript Object Notation: nested objects and lists, the format of almost every web API.</dd></div>
+    </dl>
+
+    <div class="step">Walk it</div>
+    <p><strong>CSV only knows text.</strong> The score came back as the string <code>'92'</code>, and the tuple was written as its printed form, <code>"('python', 'sql')"</code>. Types are your job on the way back: <code>int(row["score"])</code>. Pandas' <code>read_csv</code> guesses them for you, which is why it feels different.</p>
+    <p>Open CSV files with <code>newline=""</code>. The csv module writes its own line endings, and without this Windows gets a blank line between every row.</p>
+    <p><strong>JSON keeps structure, not every type.</strong> The number came back a number, but the tuple came back a list, because JSON has one kind of list and both are written as it. JSON stores only strings, numbers, true/false, null, lists and dicts. Anything else changes or fails: dict keys become strings (<code>{1: "a"}</code> loads as <code>{'1': 'a'}</code>), and a set or a date raises <code>TypeError</code>. Passing <code>default=str</code> turns a date into <code>"2026-09-21"</code>; for your own classes, <code>default=</code> takes a function that returns a dict.</p>
+    <p><code>dump</code>/<code>load</code> work on files, <code>dumps</code>/<code>loads</code> on strings. The <em>s</em> stands for string.</p>
+
+    <div class="gotcha">
+      <b>JSON keys are always strings</b>
+      <p>Save <code>{2024: "joined"}</code> and load it, and <code>data[2024]</code> is now a <code>KeyError</code>; the key is <code>"2024"</code>. It fails far from where the file was written, which makes it slow to find.</p>
+    </div>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>CSV for flat tables that anything can open, knowing every value comes back as text. JSON for nested data passed between programs, knowing only basic types survive. Check the types after every round trip.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">A CSV row reads back as <code>{"score": "92"}</code>. You compute <code>row["score"] * 2</code>. What do you get?</p>
+      <details><summary>Show answer</summary>
+        <div class="ans"><strong><code>"9292"</code></strong>, not 184. Multiplying a string repeats it. Convert first: <code>int(row["score"]) * 2</code>.</div>
+      </details>
+    </div>
+  </div>
+  <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=4568s">CampusX · Session 10: File Handling</a><span class="wspan">76:08–82:30</span>
+            <p>Why serialisation exists: <code>f.write(5)</code> fails, and a dict written as text comes back as a string. (It <em>can</em> come back with <code>ast.literal_eval</code>; the stronger reason for JSON is that every language reads it.)</p></li>
+          <li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=5160s">CampusX · same session</a><span class="wspan">86:00–96:30</span>
+            <p><code>json.dump</code> with <code>indent</code>, <code>json.load</code>, the tuple coming back as a list, a nested dict, and <code>dump</code> against <code>dumps</code>.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=5785s">CampusX · same session</a><span class="wspan">96:25–104:30</span>
+            <p>Saving your own class to JSON with a <code>default=</code> function that returns a dict. It loads back as a dict, not as the object.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=dA6ZksRR6aw&t=1447s">CampusX · Session 27: Data Gathering</a><span class="wspan">24:07–56:30</span>
+            <p>The session above never teaches CSV; it defers it to pandas. This is that: <code>read_csv</code> and its options.</p></li>
+          <li><a href="https://docs.python.org/3/library/csv.html#csv.DictReader">Python docs · csv.DictReader</a><span class="wspan">read</span>
+            <p>The standard-library way used in the exercise, with the <code>newline=""</code> rule.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> serialisation = turning an object into text or bytes (he defines it as &ldquo;to JSON&rdquo; only, but pickle is serialisation too) · file handler object = file object. He also says JSON &ldquo;can represent any kind of data&rdquo;; it can&rsquo;t, as the set, the date and the integer keys above show.</p>
+      </div>
+            <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/python/07/02_csv_json.py">exercises/python/07/02_csv_json.py</a></p>
+        <p><strong>Predict first:</strong> what type is <code>score</code> after each round trip, and what happens to the tuple?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 02: save the same records as CSV and as JSON, then read both back.
+# Predict first: what type is &quot;score&quot; after each round trip?
+import csv, json
+from pathlib import Path
+
+out = Path(__file__).parent / &quot;out&quot;
+out.mkdir(exist_ok=True)
+rows = [{&quot;name&quot;: &quot;Asha&quot;, &quot;score&quot;: 92, &quot;tags&quot;: (&quot;python&quot;, &quot;sql&quot;)},
+        {&quot;name&quot;: &quot;Ravi&quot;, &quot;score&quot;: 78, &quot;tags&quot;: (&quot;maths&quot;,)}]
+
+with open(out / &quot;scores.csv&quot;, &quot;w&quot;, newline=&quot;&quot;, encoding=&quot;utf-8&quot;) as f:
+    writer = csv.DictWriter(f, fieldnames=[&quot;name&quot;, &quot;score&quot;, &quot;tags&quot;])
+    writer.writeheader()
+    writer.writerows(rows)
+with open(out / &quot;scores.json&quot;, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+    json.dump(rows, f, indent=2)
+
+from_csv = list(csv.DictReader(open(out / &quot;scores.csv&quot;, newline=&quot;&quot;, encoding=&quot;utf-8&quot;)))
+from_json = json.load(open(out / &quot;scores.json&quot;, encoding=&quot;utf-8&quot;))
+print(&quot;CSV :&quot;, repr(from_csv[0][&quot;score&quot;]), repr(from_csv[0][&quot;tags&quot;]))
+print(&quot;JSON:&quot;, repr(from_json[0][&quot;score&quot;]), repr(from_json[0][&quot;tags&quot;]))
+
+# Then try: add &quot;joined&quot;: {2024, 2025} (a set) to Asha&#x27;s record.</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>CSV : &#x27;92&#x27; &quot;(&#x27;python&#x27;, &#x27;sql&#x27;)&quot;
+JSON: 92 [&#x27;python&#x27;, &#x27;sql&#x27;]</pre></div><p class="ex-ans">CSV gives back the <strong>string</strong> <code>'92'</code> and the tuple as its printed text. JSON gives back the <strong>int</strong> 92 and the tuple as a <strong>list</strong>.</p></details>
+        <p><strong>Then try:</strong> change Asha's <code>"tags"</code> to a set: <code>{"python", "sql"}</code>.</p>
+        <details><summary>What happens</summary><p class="ex-ans">The CSV write still works, since it just prints the set as text, but JSON stops: <code>TypeError: Object of type set is not JSON serializable</code>. Convert it first with <code>sorted(tags)</code>.</p></details>
+      </div>
+    </div>
+</section>
+
+<!-- ============================ 3 ============================ -->
+<section class="topic" id="s3">
+  <div class="topic-head">
+    <div class="num">03</div>
+    <h2 class="topic-title">Pickle: exact copies, with a catch</h2>
+    <div class="item-name">Pickle (pros &amp; cons)</div>
+  </div>
+  <div class="body">
+    <div class="premise">
+      <div class="premise-row"><span class="pk">Where we are</span><span class="pv">Section 02: JSON refused the set, and it would refuse a class instance too.</span></div>
+      <div class="premise-row"><span class="pk">What we have</span><span class="pv">Python objects of any kind: a custom class, a set, a tuple.</span></div>
+      <div class="premise-row"><span class="pk">What we want</span><span class="pv">Save them and get back exactly the same objects.</span></div>
+      <div class="premise-row"><span class="pk">How</span><span class="pv"><span class="plan"><span class="chip">1 &middot; pickle.dumps</span><span class="arr">&rarr;</span><span class="chip">2 &middot; Write bytes</span><span class="arr">&rarr;</span><span class="chip">3 &middot; pickle.loads</span></span></span></div>
+    </div>
+
+    <div class="step">See it</div>
+    <p>A dict holding a <code>Student</code> object, with a set of skills inside it, and a tuple of scores. Pickled, saved, loaded:</p>
+
+    <div class="showcase"><pre>Student ['python', 'sql'] (92, 78)
+first bytes: b'\x80\x04\x95g\x00\x00\x00\x00\x00\x00\x00}'</pre></div>
+    <p>A real <code>Student</code> came back, the set is still a set, and the tuple is still a tuple. The file itself is bytes, not text.</p>
+
+    <div class="step">Words</div>
+    <dl class="words">
+      <div><dt>pickling</dt><dd>Python's own serialisation. Unpickling rebuilds the objects from the bytes.</dd></div>
+      <div><dt>binary mode</dt><dd><code>"wb"</code> and <code>"rb"</code>. Pickles are bytes; dump one into a <code>"w"</code> file and you get <code>TypeError: write() argument must be str, not bytes</code>.</dd></div>
+    </dl>
+
+    <div class="step">Walk it</div>
+    <p><strong>The pro:</strong> almost any Python object round-trips exactly, with no conversion code. That's why it's common for caching intermediate results and for saving scikit-learn models.</p>
+    <p><strong>The cons:</strong> other languages can't read it, and you can't read it either. A pickle stores the object's data and the <em>name</em> of its class, not the class's code. Load it where <code>Student</code> isn't defined and you get <code>AttributeError: Can't get attribute 'Student' on &lt;module '__main__'&gt;</code>. Renaming the class breaks every old file the same way.</p>
+    <p><strong>The serious con:</strong> unpickling can run code. The exercise makes a class whose pickle tells <code>loads()</code> to call <code>print</code>, and the line prints during loading. A malicious file would name something worse than <code>print</code>. It's why Hugging Face created the safetensors format for model weights.</p>
+
+    <div class="gotcha">
+      <b>"It's just data" is wrong</b>
+      <p>A pickle is closer to a small program than to a data file. Never load one that came from someone else: a download, an upload, an email attachment.</p>
+    </div>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>Pickle for your own short-lived, Python-only caches. JSON for anything shared, kept long, or read by other tools. Never unpickle data you didn't create.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">A teammate emails you <code>model.pkl</code>. Is loading it with <code>pickle.load</code> safe if you trust the teammate?</p>
+      <details><summary>Show answer</summary>
+        <div class="ans"><strong>Only as safe as every machine and inbox it passed through.</strong> Loading runs whatever the file says. Ask for a format that can't run code, such as JSON for settings or safetensors for weights, or load it in a throwaway environment.</div>
+      </details>
+    </div>
+  </div>
+  <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=6379s">CampusX · Session 10: File Handling</a><span class="wspan">106:19–109:30</span>
+            <p><code>pickle.dump</code>, and the error from opening with <code>"w"</code> instead of <code>"wb"</code>.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=6570s">CampusX · same session</a><span class="wspan">109:30–112:30</span>
+            <p>The most useful minutes: loading in a new notebook fails with <em>Can&rsquo;t get attribute &lsquo;Person&rsquo;</em>, and works where the class exists. At 107:30 he promises the object works without its class; this is the correction.</p></li>
+          <li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=6772s">CampusX · same session</a><span class="wspan">112:52–113:54</span>
+            <p>His pickle-or-JSON interview answer: binary and full objects against readable text.</p></li>
+          <li><a href="https://docs.python.org/3/library/pickle.html#comparison-with-json">Python docs · pickle, comparison with JSON</a><span class="wspan">read</span>
+            <p>The warning box at the top of this page is the part the video leaves out entirely: never unpickle data you don&rsquo;t trust.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> byte stream / binary = bytes · &ldquo;keeps its power&rdquo; = still works, but only where its class can be imported. He says you&rsquo;ll pickle ML models all the time, which is true, and exactly why the warning matters.</p>
+      </div>
+            <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/python/07/03_pickle.py">exercises/python/07/03_pickle.py</a></p>
+        <p><strong>Predict first:</strong> what type comes back, and what does the second <code>pickle.loads</code> print?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 03: pickle keeps Python objects exactly, and loading one can run code.
+# Predict first: what type comes back, and what does the second load print?
+import pickle   # safe here only because this script loads nothing but bytes it just made
+from pathlib import Path
+
+out = Path(__file__).parent / &quot;out&quot;
+out.mkdir(exist_ok=True)
+
+class Student:
+    def __init__(self, name, skills):
+        self.name, self.skills = name, skills
+
+data = {&quot;student&quot;: Student(&quot;Asha&quot;, {&quot;python&quot;, &quot;sql&quot;}), &quot;scores&quot;: (92, 78)}
+(out / &quot;data.pkl&quot;).write_bytes(pickle.dumps(data))
+back = pickle.loads((out / &quot;data.pkl&quot;).read_bytes())
+print(type(back[&quot;student&quot;]).__name__, sorted(back[&quot;student&quot;].skills), back[&quot;scores&quot;])
+print(&quot;first bytes:&quot;, (out / &quot;data.pkl&quot;).read_bytes()[:12])
+
+class Surprise:                      # a harmless stand-in for a malicious file
+    def __reduce__(self):
+        return (print, (&quot;this line ran inside pickle.loads()&quot;,))
+
+pickle.loads(pickle.dumps(Surprise()))
+
+# Then try: json.dumps(data) and read the error.</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>Student [&#x27;python&#x27;, &#x27;sql&#x27;] (92, 78)
+first bytes: b&#x27;\x80\x04\x95g\x00\x00\x00\x00\x00\x00\x00}&#x27;
+this line ran inside pickle.loads()</pre></div><p class="ex-ans">A real <strong><code>Student</code></strong> with its set intact, a tuple still a tuple, and then <strong><code>this line ran inside pickle.loads()</code></strong>: code ran just from loading.</p></details>
+        <p><strong>Then try:</strong> add <code>import json</code> and <code>json.dumps(data)</code> at the end.</p>
+        <details><summary>What happens</summary><p class="ex-ans"><code>TypeError: Object of type Student is not JSON serializable</code>. That's the gap pickle fills, and the price is the line above it.</p></details>
+      </div>
+    </div>
+</section>
+
+<!-- ============================ 4 ============================ -->
+<section class="topic" id="s4">
+  <div class="topic-head">
+    <div class="num">04</div>
+    <h2 class="topic-title">Folders, paths and where Python is standing</h2>
+    <div class="item-name">Working with directories (os, pathlib)</div>
+  </div>
+  <div class="body">
+    <div class="premise">
+      <div class="premise-row"><span class="pk">Where we are</span><span class="pv">Every file so far sat in one folder.</span></div>
+      <div class="premise-row"><span class="pk">What we have</span><span class="pv">A project with nested folders and a mix of files.</span></div>
+      <div class="premise-row"><span class="pk">What we want</span><span class="pv">Create folders, find files, rename them, and have it work on any machine.</span></div>
+      <div class="premise-row"><span class="pk">How</span><span class="pv"><span class="plan"><span class="chip">1 &middot; Build a path</span><span class="arr">&rarr;</span><span class="chip">2 &middot; Create or list</span><span class="arr">&rarr;</span><span class="chip">3 &middot; Change</span></span></span></div>
+    </div>
+
+    <div class="step">See it</div>
+    <p>The exercise builds <code>project/data/</code> with <code>b.csv</code>, <code>a.csv</code>, <code>notes.txt</code> and <code>raw/c.csv</code>, then looks around:</p>
+
+    <div class="showcase"><pre>glob     : ['a.csv', 'b.csv']
+sorted   : ['a.csv', 'b.csv']
+parts    : a .csv data
+after    : ['a.csv', 'b.csv', 'notes.md', 'raw']
+relative : <span class="hl">False</span></pre></div>
+
+    <div class="step">Words</div>
+    <dl class="words">
+      <div><dt>path</dt><dd>A file's address. <em>Absolute</em> paths start at the top of the disk; <em>relative</em> paths start from the current working directory.</dd></div>
+      <div><dt>current working directory</dt><dd>The folder you ran Python <em>from</em>. Not the folder the script lives in.</dd></div>
+      <div><dt>glob</dt><dd>A filename pattern: <code>*.csv</code> matches CSVs in one folder, <code>**/*.csv</code> in every folder below it.</dd></div>
+    </dl>
+
+    <div class="step">Walk it</div>
+    <p><code>pathlib.Path</code> treats a path as an object. <code>/</code> joins parts correctly on every OS, and <code>.stem</code>, <code>.suffix</code> and <code>.parent</code> pull it apart: <code>a</code>, <code>.csv</code>, <code>data</code>. <code>mkdir(parents=True)</code> created <code>data</code> and <code>raw</code> in one call. <code>open()</code> won't do that for you: writing to <code>no_such_folder/x.txt</code> raises <code>FileNotFoundError</code> until the folder exists.</p>
+    <p>The older <code>os</code> module does the same jobs with plain strings, and you'll see both in other people's code:</p>
+    <div class="tbl-hold">
+    <table>
+      <thead><tr><th>Job</th><th>pathlib</th><th>os</th></tr></thead>
+      <tbody>
+        <tr><td>join</td><td class="mono">Path("data") / "a.csv"</td><td class="mono">os.path.join("data", "a.csv")</td></tr>
+        <tr><td>make folders</td><td class="mono">p.mkdir(parents=True, exist_ok=True)</td><td class="mono">os.makedirs(p, exist_ok=True)</td></tr>
+        <tr><td>list</td><td class="mono">p.iterdir(), p.glob("*.csv")</td><td class="mono">os.listdir(p)</td></tr>
+        <tr><td>exists</td><td class="mono">p.exists()</td><td class="mono">os.path.exists(p)</td></tr>
+        <tr><td>rename</td><td class="mono">p.rename(new)</td><td class="mono">os.rename(p, new)</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Now the <code>False</code>. The script ran from <code>exercises/</code>, so <code>Path("data")</code> meant <code>exercises/data</code>, not the folder the script built. Relative paths follow where you're standing. Every exercise anchors on <code>Path(__file__).parent</code>, the script's own folder, for exactly this reason.</p>
+    <p><code>glob</code> came back alphabetical five runs out of five on this Mac, but Python makes no promise about order; it's whatever the operating system hands back. Wrap it in <code>sorted()</code> when order matters.</p>
+
+    <div class="gotcha">
+      <b>Works from one folder, breaks from another</b>
+      <p><code>open("data/scores.csv")</code> runs fine from the project folder and raises <code>FileNotFoundError</code> from anywhere else. Build the path from <code>Path(__file__).parent</code> and it works wherever you start.</p>
+    </div>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>Build paths with <code>pathlib</code> from an anchor you control, usually <code>Path(__file__).parent</code>, never from wherever Python happened to be started. Sort anything whose order you rely on.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">Your script opens <code>"data/scores.csv"</code>. It works when you run <code>python app.py</code> inside the project folder, but fails from the folder above. Why?</p>
+      <details><summary>Show answer</summary>
+        <div class="ans">The path is <strong>relative to the working directory</strong>, not to the script. From the folder above, Python looks for <code>data/scores.csv</code> there. Anchor it: <code>Path(__file__).parent / "data" / "scores.csv"</code>.</div>
+      </details>
+    </div>
+  </div>
+  <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=1920s">CampusX · Session 10: File Handling</a><span class="wspan">32:00–33:00</span>
+            <p>Saving into a <code>temp</code> folder by copying its path in Colab. The folder is made by clicking, not in code; this section covers the code.</p></li>
+          <li><a href="https://docs.python.org/3/library/pathlib.html#basic-use">Python docs · pathlib, basic use</a><span class="wspan">read</span>
+            <p>Building, joining, globbing and reading paths, in about a page.</p></li>
+          <li><a href="https://docs.python.org/3/library/pathlib.html#corresponding-tools">Python docs · pathlib and os side by side</a><span class="wspan">read</span>
+            <p>The full version of the table above, for reading older code written with <code>os.path</code>.</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> location / copy path = absolute path · &ldquo;the same directory as your coding file&rdquo; = the current working directory. They only match in Colab, where both are <code>/content</code>.</p>
+      </div>
+            <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/python/07/04_directories.py">exercises/python/07/04_directories.py</a></p>
+        <p><strong>Predict first:</strong> which files does <code>glob("*.csv")</code> find, and does <code>Path("data")</code> point at the folder the script built?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 04: build folders, list files, and rename them with pathlib.
+# Predict first: which files does glob(&quot;*.csv&quot;) find, and in what order?
+from pathlib import Path
+import shutil
+
+root = Path(__file__).parent / &quot;out&quot; / &quot;project&quot;
+shutil.rmtree(root, ignore_errors=True)
+(root / &quot;data&quot; / &quot;raw&quot;).mkdir(parents=True)                   # makes every missing folder
+for name in [&quot;b.csv&quot;, &quot;a.csv&quot;, &quot;notes.txt&quot;, &quot;raw/c.csv&quot;]:
+    (root / &quot;data&quot; / name).write_text(&quot;x&quot;, encoding=&quot;utf-8&quot;)
+
+data = root / &quot;data&quot;
+print(&quot;glob     :&quot;, [p.name for p in data.glob(&quot;*.csv&quot;)])
+print(&quot;sorted   :&quot;, sorted(p.name for p in data.glob(&quot;*.csv&quot;)))
+print(&quot;parts    :&quot;, (data / &quot;a.csv&quot;).stem, (data / &quot;a.csv&quot;).suffix, (data / &quot;a.csv&quot;).parent.name)
+(data / &quot;notes.txt&quot;).rename(data / &quot;notes.md&quot;)
+print(&quot;after    :&quot;, sorted(p.name for p in data.iterdir()))
+print(&quot;relative :&quot;, Path(&quot;data&quot;).resolve() == data.resolve())
+
+# Then try: change glob(&quot;*.csv&quot;) to glob(&quot;**/*.csv&quot;).</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>glob     : [&#x27;a.csv&#x27;, &#x27;b.csv&#x27;]
+sorted   : [&#x27;a.csv&#x27;, &#x27;b.csv&#x27;]
+parts    : a .csv data
+after    : [&#x27;a.csv&#x27;, &#x27;b.csv&#x27;, &#x27;notes.md&#x27;, &#x27;raw&#x27;]
+relative : False</pre></div><p class="ex-ans"><strong><code>a.csv</code> and <code>b.csv</code> only</strong>: <code>c.csv</code> sits one level down in <code>raw/</code>. And <strong>no</strong>: run from <code>exercises/</code>, <code>Path("data")</code> is <code>exercises/data</code>.</p></details>
+        <p><strong>Then try:</strong> change both <code>glob("*.csv")</code> calls to <code>glob("**/*.csv")</code>.</p>
+        <details><summary>What happens</summary><p class="ex-ans">Now <code>c.csv</code> appears too: <code>['a.csv', 'b.csv', 'c.csv']</code>. <code>**</code> means this folder and every folder below it.</p></details>
+      </div>
+    </div>
+</section>
+
+<!-- ============================ 5 ============================ -->
+<section class="topic" id="s5">
+  <div class="topic-head">
+    <div class="num">05</div>
+    <h2 class="topic-title">Logs that outlive the terminal</h2>
+    <div class="item-name">Logging to files</div>
+  </div>
+  <div class="body">
+    <div class="premise">
+      <div class="premise-row"><span class="pk">Where we are</span><span class="pv">Scripts report what they did with <code>print()</code>, and it disappears with the terminal.</span></div>
+      <div class="premise-row"><span class="pk">What we have</span><span class="pv">A job that runs while you're not watching.</span></div>
+      <div class="premise-row"><span class="pk">What we want</span><span class="pv">A file that records what happened, how serious each event was, and the full error when something broke.</span></div>
+      <div class="premise-row"><span class="pk">How</span><span class="pv"><span class="plan"><span class="chip">1 &middot; Configure once</span><span class="arr">&rarr;</span><span class="chip">2 &middot; Log at a level</span><span class="arr">&rarr;</span><span class="chip">3 &middot; Read the file</span></span></span></div>
+    </div>
+
+    <div class="step">See it</div>
+    <p>Four messages at four levels, with logging pointed at <code>app.log</code>. This is the file afterwards:</p>
+
+    <div class="showcase"><pre>INFO     etl: loaded 250 rows
+WARNING  etl: 3 rows had no score
+ERROR    etl: average failed
+Traceback (most recent call last):
+  File "…/exercises/python/07/05_logging.py", line 18, in &lt;module&gt;
+    1 / 0
+    ~~^~~
+ZeroDivisionError: division by zero</pre></div>
+    <p>The <code>debug</code> message is missing, and the error came with its full traceback.</p>
+
+    <div class="step">Words</div>
+    <dl class="words">
+      <div><dt>logger</dt><dd>A named source of messages: <code>logging.getLogger("etl")</code>. In a module, use <code>__name__</code> so each line says which file spoke.</dd></div>
+      <div><dt>level</dt><dd>How serious a message is: DEBUG &lt; INFO &lt; WARNING &lt; ERROR &lt; CRITICAL.</dd></div>
+      <div><dt>handler</dt><dd>Where messages go: a file, the screen, or both. <code>basicConfig(filename=…)</code> sets up a file handler for you.</dd></div>
+    </dl>
+
+    <div class="step">Walk it</div>
+    <p>The level is a threshold. Set to INFO, it lets INFO and everything above through, so the debug line was dropped. With no configuration at all the threshold is WARNING, which is why <code>log.info()</code> on its own seems to print nothing.</p>
+    <p><code>log.exception()</code> inside an <code>except</code> block logs at ERROR and appends the traceback. In a real incident that's usually the line that tells you what went wrong.</p>
+    <p>Pass values as arguments, <code>log.info("loaded %d rows", 250)</code>, not as an f-string. The text is only built if the line actually gets written.</p>
+    <p>A log file opens in append mode, so it grows across runs. The exercise deletes it first so the output stays the same each time.</p>
+
+    <div class="gotcha">
+      <b>basicConfig only works once</b>
+      <p>The first call wins; a second is silently ignored. In a test, the second configuration received nothing at all. If an imported library configured logging first, yours does nothing. Pass <code>force=True</code> to replace it.</p>
+    </div>
+    <div class="gotcha">
+      <b>Logs get shared</b>
+      <p>Log files end up in bug reports and chat threads. Never log API keys, passwords or personal data.</p>
+    </div>
+
+    <div class="step rule-step">The rule</div>
+    <div class="rule">
+      <p>Configure logging once, at the start, with a file and a level. Log through a named logger at the level each event deserves, and use <code>log.exception</code> inside <code>except</code> so errors arrive with their traceback.</p>
+    </div>
+
+    <div class="check">
+      <p class="q">Your <code>log.info(...)</code> lines appear nowhere, not on screen and not in the file. Name two likely causes.</p>
+      <details><summary>Show answer</summary>
+        <div class="ans"><strong>The level:</strong> nothing configured, so the threshold is WARNING and INFO is dropped. <strong>Or configuration already happened:</strong> something called <code>basicConfig</code> first, so yours was ignored. <code>force=True</code> fixes the second.</div>
+      </details>
+    </div>
+  </div>
+  <div class="body">
+      <div class="step watch-step">Watch it</div>
+      <div class="watch">
+        <ol>
+          <li><a href="https://docs.python.org/3/howto/logging.html#logging-to-a-file">Python docs · Logging HOWTO, logging to a file</a><span class="wspan">read</span>
+            <p>CampusX doesn&rsquo;t cover logging in this session. This is the short official version of this section.</p></li>
+          <li><a href="https://docs.python.org/3/howto/logging.html#when-to-use-logging">Python docs · When to use logging</a><span class="wspan">read</span>
+            <p>A one-table answer to &ldquo;print or log, and at which level?&rdquo;</p></li>
+        </ol>
+        <p class="bridge"><b>Their words, our words</b> handler = destination · formatter = the layout of each line · root logger = the one <code>basicConfig</code> sets up. The closest thing in the video is append mode (24:42), which is how a hand-written log file would work.</p>
+      </div>
+            <div class="step do-step">Do it</div>
+      <div class="exercise">
+        <p class="ex-file"><a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/python/07/05_logging.py">exercises/python/07/05_logging.py</a></p>
+        <p><strong>Predict first:</strong> which of the four messages end up in <code>app.log</code>?</p>
+        <details><summary>Show the script</summary><div class="showcase"><pre># Section 05: send log lines to a file instead of the screen.
+# Predict first: which of the four messages end up in app.log?
+import logging
+from pathlib import Path
+
+log_file = Path(__file__).parent / &quot;out&quot; / &quot;app.log&quot;
+log_file.parent.mkdir(exist_ok=True)
+log_file.unlink(missing_ok=True)
+
+logging.basicConfig(filename=log_file, level=logging.INFO, encoding=&quot;utf-8&quot;,
+                    format=&quot;%(levelname)-8s %(name)s: %(message)s&quot;)
+log = logging.getLogger(&quot;etl&quot;)
+
+log.debug(&quot;row 17 raw=%r&quot;, {&quot;score&quot;: &quot;92&quot;})
+log.info(&quot;loaded %d rows&quot;, 250)
+log.warning(&quot;3 rows had no score&quot;)
+try:
+    1 / 0
+except ZeroDivisionError:
+    log.exception(&quot;average failed&quot;)
+
+print(log_file.read_text(encoding=&quot;utf-8&quot;))
+
+# Then try: change level=logging.INFO to level=logging.DEBUG.</pre></div></details>
+        <details><summary>Check your output</summary><div class="showcase"><pre>INFO     etl: loaded 250 rows
+WARNING  etl: 3 rows had no score
+ERROR    etl: average failed
+Traceback (most recent call last):
+  File &quot;…/exercises/python/07/05_logging.py&quot;, line 18, in &lt;module&gt;
+    1 / 0
+    ~~^~~
+ZeroDivisionError: division by zero</pre></div><p class="ex-ans"><strong>Three</strong>: INFO, WARNING and ERROR. The DEBUG line is below the INFO threshold. The ERROR line brings the whole traceback with it.</p></details>
+        <p><strong>Then try:</strong> change <code>level=logging.INFO</code> to <code>level=logging.DEBUG</code>.</p>
+        <details><summary>What happens</summary><p class="ex-ans">A fourth line appears first: <code>DEBUG    etl: row 17 raw={'score': '92'}</code>. Same code, lower threshold.</p></details>
+        <p class="ex-note"><b>Worth knowing.</b> The traceback path is shortened to <code>…/exercises/</code> here; yours shows the full path on your machine.</p>
+      </div>
+    </div>
+</section>
+
+<footer>
+  <span>Python &middot; &sect;7</span>
+  <span>See it &rarr; Words &rarr; Walk it &rarr; The rule</span>
+  <span>Every output on this page was produced by running the code</span>
+</footer>
+</div>
+<script src="../../../assets/gate.js"></script>
+</body>
+</html>

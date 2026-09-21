@@ -15,6 +15,14 @@
       "path": "notes/llm-101/02-transformer-architecture",
       "track": "ai-engineer-track",
       "added": "2026-09-10"
+    },
+    {
+      "topic": "python",
+      "section": 7,
+      "title": "Where Data Goes When the Program Ends",
+      "path": "notes/python/07-file-handling-and-serialization",
+      "track": "prerequisites",
+      "added": "2026-09-21"
     }
   ]
 }
