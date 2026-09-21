@@ -157,7 +157,6 @@ def build_index(structure, notes):
 <div class="wrap">
 <header class="mast">
   <h1>AI Engineer Notes</h1>
-  <nav><a href="roadmap/">Roadmap</a></nav>
 </header>
 {chr(10).join(parts)}
 </div>
