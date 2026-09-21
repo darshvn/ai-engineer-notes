@@ -818,7 +818,7 @@ TypeError: Object of type set is not JSON serializable</pre>
 <h3>Common mistakes</h3>
 <ul class="points"><li>Doing arithmetic on CSV values without converting them: <code>"92" * 2</code> is <code>"9292"</code>.</li><li>Looking up a JSON dict with an int key after loading it: the key is now a string.</li><li>Expecting a tuple or set back from JSON.</li></ul>
 
-<h3>Resources</h3><ul class="res"><li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=4568s">CampusX Session 10, 76:08–82:30</a> — why text files can't hold lists and dicts</li><li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=5160s">CampusX Session 10, 86:00–96:30</a> — <code>json.dump</code>, <code>json.load</code>, tuples, nested dicts</li><li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=5785s">CampusX Session 10, 96:25–104:30</a> — saving your own objects with <code>default=</code></li><li><a href="https://www.youtube.com/watch?v=dA6ZksRR6aw&t=1447s">CampusX Session 27, 24:07–56:30</a> — CSV with pandas (Session 10 doesn't cover CSV)</li><li><a href="https://docs.python.org/3/library/csv.html#csv.DictReader">Python docs: csv.DictReader</a></li><li><a href="https://docs.python.org/3/library/json.html#json-to-py-table">Python docs: JSON ↔ Python conversion table</a></li></ul>
+<h3>Resources</h3><ul class="res"><li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=4568s">CampusX Session 10, 76:08–82:30</a> — why text files can't hold lists and dicts</li><li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=5160s">CampusX Session 10, 86:00–96:30</a> — <code>json.dump</code>, <code>json.load</code>, tuples, nested dicts</li><li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=5785s">CampusX Session 10, 96:25–104:30</a> — saving your own objects with <code>default=</code></li><li><a href="https://www.youtube.com/watch?v=dA6ZksRR6aw&t=1447s">CampusX Session 27, 24:07–56:30</a> — CSV with pandas (Session 10 doesn't cover CSV)</li><li><a href="https://www.youtube.com/watch?v=dA6ZksRR6aw&t=3856s">CampusX Session 27, 64:16–70:49</a> — JSON with pandas (<code>read_json</code>)</li><li><a href="https://docs.python.org/3/library/csv.html#csv.DictReader">Python docs: csv.DictReader</a></li><li><a href="https://docs.python.org/3/library/json.html#json-to-py-table">Python docs: JSON ↔ Python conversion table</a></li></ul>
 <h3>Practice</h3><p>Run <a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/python/07/02_csv_json.py"><code>exercises/python/07/02_csv_json.py</code></a> from the <code>exercises</code> folder. It saves the same records as CSV and JSON and prints the type of each value that comes back.</p><p><strong>Try:</strong> make Asha's <code>tags</code> a set, <code>{"python", "sql"}</code>. <span class="small">Result: <code>TypeError: Object of type set is not JSON serializable</code>.</span></p>
 
 </section>
@@ -931,7 +931,7 @@ scores = BASE / "data" / "scores.csv"</pre>
 <h3>Key points</h3>
 <ul class="points"><li>Prefer <code>pathlib</code>; know the <code>os</code> equivalents for reading older code.</li><li>Relative paths depend on where Python was started. Anchor them with <code>Path(__file__).parent</code>.</li><li>Use <code>mkdir(parents=True, exist_ok=True)</code> before writing into a new folder.</li><li>Sort directory listings if the order matters.</li></ul>
 
-<h3>Resources</h3><ul class="res"><li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=1920s">CampusX Session 10, 32:00–33:00</a> — saving a file into another folder (done through the Colab file panel)</li><li><a href="https://docs.python.org/3/library/pathlib.html#basic-use">Python docs: pathlib basic use</a></li><li><a href="https://docs.python.org/3/library/pathlib.html#corresponding-tools">Python docs: pathlib ↔ os equivalents</a></li></ul>
+<h3>Resources</h3><ul class="res"><li><a href="https://www.youtube.com/watch?v=o-TAYRMQzIQ&t=1920s">CampusX Session 10, 32:00–33:00</a> — saving a file into another folder (done through the Colab file panel)</li><li><a href="https://docs.python.org/3/library/pathlib.html#basic-use">Python docs: pathlib basic use</a></li><li><a href="https://docs.python.org/3/library/pathlib.html#corresponding-tools">Python docs: pathlib ↔ os equivalents</a></li><li><a href="https://docs.python.org/3/library/os.html#files-and-directories">Python docs: os, files and directories</a> — the os functions in full</li></ul>
 <h3>Practice</h3><p>Run <a href="https://github.com/darshvn/ai-engineer-notes/blob/main/exercises/python/07/04_directories.py"><code>exercises/python/07/04_directories.py</code></a> from the <code>exercises</code> folder. It builds a small folder tree, lists and renames files, and shows the working-directory effect.</p><p><strong>Try:</strong> change <code>glob("*.csv")</code> to <code>glob("**/*.csv")</code>. <span class="small">Result: <code>c.csv</code> from the <code>raw</code> subfolder is found too.</span></p>
 
 </section>
@@ -966,9 +966,9 @@ except ZeroDivisionError:
 
 print(open("app.log", encoding="utf-8").read())</pre>
 <div class="out-label">Output</div>
-<pre class="output">2026-09-21 19:36:22,610 INFO     etl: loaded 250 rows
-2026-09-21 19:36:22,610 WARNING  etl: 3 rows had no score
-2026-09-21 19:36:22,610 ERROR    etl: average failed
+<pre class="output">2026-09-21 19:38:54,955 INFO     etl: loaded 250 rows
+2026-09-21 19:38:54,955 WARNING  etl: 3 rows had no score
+2026-09-21 19:38:54,955 ERROR    etl: average failed
 Traceback (most recent call last):
   File "&lt;string&gt;", line 15, in &lt;module&gt;
 ZeroDivisionError: division by zero</pre>
