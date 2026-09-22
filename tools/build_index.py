@@ -161,7 +161,7 @@ def build_index(structure, notes):
 {chr(10).join(parts)}
 </div>
 {TOGGLE_JS}
-<script src="assets/gate.js"></script>\n</body>
+</body>
 </html>
 """
 

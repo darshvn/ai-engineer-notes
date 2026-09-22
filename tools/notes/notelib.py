@@ -197,7 +197,7 @@ def page(title, description, lead, sections, extra=''):
             + f'<nav class="toc"><h2>On this page</h2><ol>{toc_items}</ol></nav>\n'
             + body + extra
             + '</div></div>\n<script src="../../../assets/runner.js"></script>\n'
-            + '<script src="../../../assets/gate.js"></script>\n</body>\n</html>\n')
+            + '</body>\n</html>\n')
 
 
 def review(questions):
